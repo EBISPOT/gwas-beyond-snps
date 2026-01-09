@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gwascatalog.sumstatapp"
+version = "0.1.0"
+description = "Data validation applications for GWAS Catalog submissions"
+authors = [
+    { name = "Benjamin Wingfield", email = "bwingfield@ebi.ac.uk" },
+]
+license = "Apache-2.0"
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: Apache Software License",
+    "Topic :: Scientific/Engineering :: Bio-Informatics"
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["gwascatalog.sumstatlib"]
+
+[project.scripts]
+gwascatalog = "gwascatalog.sumstatapp.main:main"
+
+[tool.uv.workspace]
+members = [
+    "sumstatlib",
+]
+
+[tool.uv.sources]
+gwascatalog-sumstatlib = { workspace = true }
+
+[tool.ruff.lint]
+select = [
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+]
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gwascatalog"]

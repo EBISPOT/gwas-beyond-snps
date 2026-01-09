@@ -16,3 +16,12 @@ This repository contains Python packages designed to help you prepare your GWAS 
 | Copy number variant (CNV)            | ✅                                                                            |
 | Gene                                 | ✅                                                                            |
 
+
+## Developer notes 
+
+This repository is a uv workspace containing:
+
+- sumstatlib: shared validation models
+- sumstatapp: a data validation application which uses sumstatlib internally
+
+The workspace root is not a Python package.
