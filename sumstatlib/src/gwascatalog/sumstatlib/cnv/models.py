@@ -9,8 +9,8 @@ from gwascatalog.sumstatlib.cnv.sumstat_types import BasePairEnd, BasePairStart
 from gwascatalog.sumstatlib.core.sumstat_types import (
     Chromosome,
     N,
-    negLog10pValue,
-    pValue,
+    NegLog10pValue,
+    PValue,
 )
 
 
@@ -22,8 +22,8 @@ class CNVSumstatRow(BaseModel):
     base_pair_end: BasePairEnd
     effect_direction: EffectDirection
     # TODO: add effect allele?
-    p_value: pValue | None
-    neg_log10_pvalue: negLog10pValue | None
+    p_value: PValue | None
+    neg_log10_pvalue: NegLog10pValue | None
     model_type: ModelType
     n: N | None
 

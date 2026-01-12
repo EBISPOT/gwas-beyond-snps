@@ -40,7 +40,7 @@ HazardRatio = Annotated[float, Field(description="Effect size as hazard ratio", 
 
 StandardError = Annotated[float, Field(description="Standard error of the effect")]
 
-pValue = Annotated[
+PValue = Annotated[
     float,
     Field(
         description="p-value of GWAS association",
@@ -50,7 +50,7 @@ pValue = Annotated[
     ),
 ]
 
-negLog10pValue = Annotated[
+NegLog10pValue = Annotated[
     float,
     Field(
         description="Negative log10 p-value of the association statistic",
@@ -59,7 +59,7 @@ negLog10pValue = Annotated[
     ),
 ]
 
-confidenceIntervalUpper = Annotated[
+ConfidenceIntervalUpper = Annotated[
     float,
     Field(
         description="Upper value of the confidence interval",
@@ -67,7 +67,7 @@ confidenceIntervalUpper = Annotated[
     ),
 ]
 
-confidenceIntervalLower = Annotated[
+ConfidenceIntervalLower = Annotated[
     float,
     Field(
         description="Lower value of the confidence interval",
@@ -77,6 +77,6 @@ confidenceIntervalLower = Annotated[
 
 Info = Annotated[float, Field(description="Imputation information metric", ge=0, le=1)]
 
-sampleSizePerVariant = Annotated[
+SampleSizePerVariant = Annotated[
     PositiveInt, Field(description="Sample size per variant")
 ]

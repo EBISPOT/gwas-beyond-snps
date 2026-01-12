@@ -25,6 +25,7 @@ from gwascatalog.sumstatlib.core.metadata_types import (
     Imputation,
     ImputationPanel,
     ImputationSoftware,
+    IsNeglog10pValue,
     MAFLowerLimit,
     Md5Sum,
     NumberOfIndividuals,
@@ -39,21 +40,20 @@ from gwascatalog.sumstatlib.core.metadata_types import (
     StudyTag,
     SummaryStatisticsFile,
     VariantCount,
-    isNeglog10pValue,
 )
 from gwascatalog.sumstatlib.core.sumstat_types import (
     BasePairLocation,
     Beta,
     Chromosome,
+    ConfidenceIntervalLower,
+    ConfidenceIntervalUpper,
     HazardRatio,
     Info,
+    NegLog10pValue,
     OddsRatio,
+    PValue,
+    SampleSizePerVariant,
     StandardError,
-    confidenceIntervalLower,
-    confidenceIntervalUpper,
-    negLog10pValue,
-    pValue,
-    sampleSizePerVariant,
 )
 from gwascatalog.sumstatlib.snp.sumstat_types import (
     EffectAllele,
@@ -89,7 +89,7 @@ class SNPStudyMetadata(BaseModel):
     md5_sum: Md5Sum | Literal["NR"]
     readme: Readme | None
     summary_statistics_assembly: GenomeAssemblyField
-    neg_log_10_p_values: isNeglog10pValue | None
+    neg_log_10_p_values: IsNeglog10pValue | None
     maf_lower_limit: MAFLowerLimit | None
     cohorts: list[Cohort] | None
     cohort_ref: list[CohortRef] | None
@@ -131,15 +131,15 @@ class SNPSumStat(BaseModel):
     hazard_ratio: HazardRatio | None
     standard_error: StandardError | None
     effect_allele_frequency: EffectAlleleFrequency
-    p_value: pValue | None
-    neg_log_10_p_value: negLog10pValue | None
+    p_value: PValue | None
+    neg_log_10_p_value: NegLog10pValue | None
     variant_id: VariantId | None
     rsid: RsID | None
     info: Info | None
-    ci_lower: confidenceIntervalLower | None
-    ci_upper: confidenceIntervalUpper | None
+    ci_lower: ConfidenceIntervalLower | None
+    ci_upper: ConfidenceIntervalUpper | None
     ref_allele: RefAlleleField | None
-    n: sampleSizePerVariant | None
+    n: SampleSizePerVariant | None
 
 
 class SNPSubmission(BaseModel):

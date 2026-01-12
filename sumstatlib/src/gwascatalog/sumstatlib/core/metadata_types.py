@@ -169,7 +169,7 @@ Readme = Annotated[
     ),
 ]
 
-isNeglog10pValue = Annotated[
+IsNeglog10pValue = Annotated[
     bool,
     Field(
         description="Are summary statistics p-values given in the negative log10 form?"
