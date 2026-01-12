@@ -4,6 +4,7 @@ from typing import Annotated
 
 from pydantic import AfterValidator, Field
 
+from gwascatalog.sumstatlib.snp.sumstat_enums import RefAlleleState
 from gwascatalog.sumstatlib.type_helpers import validate_actg_sequence
 
 EffectAllele = Annotated[
@@ -40,4 +41,12 @@ VariantId = Annotated[
 RsID = Annotated[
     str,
     Field(description="The rsID of the variant", pattern=r"^rs[0-9]+$"),
+]
+
+RefAlleleField = Annotated[
+    RefAlleleState,
+    Field(
+        description="State which of the alleles is the reference allele",
+        examples=["EA"],
+    ),
 ]

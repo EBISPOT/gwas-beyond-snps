@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import math
 
-from pydantic import BaseModel, ConfigDict, model_validator, computed_field
+from pydantic import BaseModel, ConfigDict, computed_field, model_validator
 
 from gwascatalog.sumstatlib.cnv.sumstat_enums import EffectDirection, ModelType
 from gwascatalog.sumstatlib.cnv.sumstat_types import BasePairEnd, BasePairStart
 from gwascatalog.sumstatlib.core.sumstat_types import (
     Chromosome,
-    pValue,
-    negLog10pValue,
     N,
+    negLog10pValue,
+    pValue,
 )
 
 
