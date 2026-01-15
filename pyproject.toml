@@ -50,3 +50,8 @@ select = [
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gwascatalog"]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "error",
+]

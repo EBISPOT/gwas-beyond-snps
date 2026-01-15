@@ -4,19 +4,38 @@ from typing import Annotated
 
 from pydantic import Field
 
-BasePairStart = Annotated[
-    int,
+from gwascatalog.sumstatlib.cnv.sumstat_enums import EffectDirection, ModelType
+
+cnv_regex = r"^(CNV|CN=?\d+)(,(CNV|CN=?\d+))*$"
+
+CNVEffectAllele = Annotated[
+    str,
     Field(
-        description="The start position of the CNV, using the "
-        "coordinate system declared",
-        ge=0,
+        description="""
+        The symbolic allele associated with the effect, optionally representing the 
+        copy number.
+        
+        See how CNVs are represented at:
+        
+        https://www.ensembl.org/info/docs/tools/vep/vep_formats.html#sv
+        """,
+        pattern=cnv_regex,
+        examples=["CNV", "CN=5", "CN2", "CN=0,CN=2,CN=4"],
     ),
 ]
 
-BasePairEnd = Annotated[
-    int,
+EffectDirectionField = Annotated[
+    EffectDirection,
     Field(
-        description="The end position of the CNV, using the coordinate system declared",
-        ge=0,
+        description="Direction in which the CNV affects a trait",
+        examples=["positive", "negative", "ambiguous"],
+    ),
+]
+
+ModelTypeField = Annotated[
+    ModelType,
+    Field(
+        description="Genetic association model type",
+        examples=["additive", "recessive", "dominant", "dosage-sensitive"],
     ),
 ]

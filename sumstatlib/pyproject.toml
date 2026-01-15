@@ -29,3 +29,8 @@ packages = ["src/gwascatalog"]
 artifacts = [
   "py.typed"
 ]
+
+[tool.pytest.ini_options]
+filterwarnings = [
+    "error",
+]

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import AliasChoices, BeforeValidator, Field, PositiveInt
+from pydantic import BeforeValidator, Field, PositiveInt
 
-from gwascatalog.sumstatlib.type_helpers import chromosome_to_integer
+from gwascatalog.sumstatlib.core.helpers import chromosome_to_integer
 
 Chromosome = Annotated[
     int,
@@ -44,7 +44,6 @@ PValue = Annotated[
     float,
     Field(
         description="p-value of GWAS association",
-        validation_alias=AliasChoices("p_value", "p-value", "pval", "P-value", "P"),
         ge=0,
         le=1,
     ),
@@ -54,7 +53,6 @@ NegLog10pValue = Annotated[
     float,
     Field(
         description="Negative log10 p-value of the association statistic",
-        validation_alias=AliasChoices("neg_log_10_p_value"),
         ge=0,
     ),
 ]
@@ -63,7 +61,6 @@ ConfidenceIntervalUpper = Annotated[
     float,
     Field(
         description="Upper value of the confidence interval",
-        validation_alias=AliasChoices("ci_upper"),
     ),
 ]
 
@@ -71,7 +68,6 @@ ConfidenceIntervalLower = Annotated[
     float,
     Field(
         description="Lower value of the confidence interval",
-        validation_alias=AliasChoices("ci_lower"),
     ),
 ]
 
@@ -79,4 +75,20 @@ Info = Annotated[float, Field(description="Imputation information metric", ge=0,
 
 SampleSizePerVariant = Annotated[
     PositiveInt, Field(description="Sample size per variant")
+]
+
+BasePairStart = Annotated[
+    int,
+    Field(
+        description="The start position of the CNV, using the "
+        "coordinate system declared",
+        ge=0,
+    ),
+]
+BasePairEnd = Annotated[
+    int,
+    Field(
+        description="The end position of the CNV, using the coordinate system declared",
+        ge=0,
+    ),
 ]

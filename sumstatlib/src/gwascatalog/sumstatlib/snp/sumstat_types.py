@@ -2,21 +2,23 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import AfterValidator, Field
+from pydantic import Field
 
 from gwascatalog.sumstatlib.snp.sumstat_enums import RefAlleleState
-from gwascatalog.sumstatlib.type_helpers import validate_actg_sequence
 
-EffectAllele = Annotated[
+sequence_regex = r"^[ACGT]$"
+SNPEffectAllele = Annotated[
     str,
-    Field(description="The allele associated with the effect", min_length=1),
-    AfterValidator(validate_actg_sequence),
+    Field(
+        description="The allele associated with the effect",
+        min_length=1,
+        pattern=sequence_regex,
+    ),
 ]
 
 OtherAllele = Annotated[
     str,
-    Field(description="The non-effect allele", min_length=1),
-    AfterValidator(validate_actg_sequence),
+    Field(description="The non-effect allele", min_length=1, pattern=sequence_regex),
 ]
 
 EffectAlleleFrequency = Annotated[
