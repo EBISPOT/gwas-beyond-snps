@@ -66,6 +66,7 @@ class CNVModel(BaseSumstatModel):
         self._assembly = GenomeAssembly(context["assembly"])
 
     def validate_semantics(self) -> None:
+        # TODO: validate start location is smaller than chromosome size?
         raise NotImplementedError
 
     @computed_field

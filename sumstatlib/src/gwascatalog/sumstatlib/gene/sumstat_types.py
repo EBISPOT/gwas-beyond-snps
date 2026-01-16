@@ -10,7 +10,7 @@ hgnc_regex = r"^[A-Z0-9]+(?:-[A-Z0-9]+)*$"
 
 HGNCGeneSymbol = Annotated[
     str,
-    StringConstraints(pattern=hgnc_regex, to_upper=True),
+    StringConstraints(pattern=hgnc_regex),
     Field(
         description="HGNC symbol",
         examples=["ISG20", "A2M", "A4GALT", "HLA-DRA", "MT-ND1"],

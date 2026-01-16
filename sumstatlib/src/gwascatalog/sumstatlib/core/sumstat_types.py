@@ -8,7 +8,7 @@ from gwascatalog.sumstatlib.core.helpers import chromosome_to_integer
 
 Chromosome = Annotated[
     int,
-    Field(description="Chromosome where the variant is located", ge=1, le=26),
+    Field(description="Chromosome where the variant is located", ge=1, le=25),
     BeforeValidator(chromosome_to_integer),
 ]
 
