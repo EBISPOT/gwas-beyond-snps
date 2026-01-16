@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import Field
-
 from gwascatalog.sumstatlib.cnv.sumstat_enums import EffectDirection, ModelType
+from pydantic import Field
 
 cnv_regex = r"^(CNV|CN=?\d+)(,(CNV|CN=?\d+))*$"
 

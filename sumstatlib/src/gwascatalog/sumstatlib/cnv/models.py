@@ -1,9 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal, Self, final
-
-from pydantic import ConfigDict, PrivateAttr, computed_field, model_validator
-from pydantic_core.core_schema import ValidationInfo
+from typing import Any, Literal, Self, final
 
 from gwascatalog.sumstatlib.cnv.sumstat_types import (
     CNVEffectAllele,
@@ -16,10 +13,9 @@ from gwascatalog.sumstatlib.core.sumstat_types import (
     BasePairEnd,
     BasePairStart,
     Chromosome,
-    NegLog10pValue,
-    PValue,
     SampleSizePerVariant,
 )
+from pydantic import ConfigDict, PrivateAttr, computed_field, model_validator
 
 effect_allele_default: Literal["CNV"] = "CNV"
 
@@ -55,9 +51,9 @@ class CNVSumstatModel(BaseSumstatModel):
     # private attributes to avoid polluting the data model
     # adopting this pattern because metadata are provided by a payload or CLI flag at
     # runtime, so adding a field doesn't make sense
-    _assembly: GenomeAssembly = PrivateAttr(default=None)
+    _assembly: GenomeAssembly = PrivateAttr()
 
-    def model_post_init(self, context: ValidationInfo) -> None:
+    def model_post_init(self, context: Any) -> None:
         if "assembly" not in context:
             raise ValueError("genome assembly must be provided via validation context")
 

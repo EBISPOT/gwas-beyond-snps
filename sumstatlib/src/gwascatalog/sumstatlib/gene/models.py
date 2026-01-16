@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from typing import Self, final
 
-from pydantic import ConfigDict, model_validator
-
 from gwascatalog.sumstatlib.core.helpers import check_confidence_interval_structure
 from gwascatalog.sumstatlib.core.models import BaseSumstatModel
 from gwascatalog.sumstatlib.core.sumstat_types import (
@@ -19,6 +17,7 @@ from gwascatalog.sumstatlib.gene.sumstat_types import (
     HGNCGeneSymbol,
     ZScore,
 )
+from pydantic import ConfigDict, model_validator
 
 
 @final
@@ -66,8 +65,8 @@ class GeneSumstatModel(BaseSumstatModel):
                 return self
             case int(), None | None, int():
                 raise ValueError("Provide both values: base_pair_start, base_pair_end")
-            case int(), int():
-                if self.base_pair_end <= self.base_pair_start:
+            case int() as start, int() as end:
+                if end <= start:
                     raise ValueError(
                         "base_pair_end must be greater than base_pair_start"
                     )
@@ -105,7 +104,13 @@ class GeneSumstatModel(BaseSumstatModel):
     @model_validator(mode="after")
     def check_effect_size_in_specified_interval(self) -> Self:
         """A provided effect size must be inside a provided confidence interval"""
-        if self.effect_size is None or not self.has_confidence_intervals:
+        if self.effect_size is None:
+            return self
+
+        if (
+            self.confidence_interval_lower is None
+            or self.confidence_interval_upper is None
+        ):
             return self
 
         if not (

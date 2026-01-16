@@ -11,7 +11,7 @@ class SumstatTable:
         self._path = input_path
         self._errors: list[tuple[int, Exception]] = []
 
-    def output_fieldnames(self) -> tuple[str, ...]:
+    def output_fieldnames(self) -> None:
         """Return output field names in a consistent order.
 
         Field names in the input_path may occur in any order, but data submitted to the
@@ -20,14 +20,13 @@ class SumstatTable:
         1) Mandatory columns, defined in concrete subclasses
         2) A reasonable number of extra columns, defined by authors
         """
-        # default: all fields from Pydantic model
-        ...
+        raise NotImplementedError
 
-    def validate_rows(self) -> Iterable[dict[str, object]]:
+    def validate_rows(self) -> None:
         """Validate all rows, storing errors in self._errors and yielding validated
         rows.
         """
-        ...
+        raise NotImplementedError
 
     def errors(self) -> Iterable[tuple[int, Exception]]:
         """Return all row errors encountered"""

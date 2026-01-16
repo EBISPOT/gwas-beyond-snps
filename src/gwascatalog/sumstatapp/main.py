@@ -1,8 +1,8 @@
-from gwascatalog.sumstatlib.type_helpers import DNA_NUCLEOTIDES
+from gwascatalog.sumstatlib import CNVSumstatModel
 
 
 def main():
-    print(DNA_NUCLEOTIDES)
+    print(CNVSumstatModel)
     print("Hello from gwas-pysumstats!")
 
 

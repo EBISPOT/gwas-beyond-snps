@@ -38,10 +38,11 @@ def check_confidence_interval_structure(
     match (ci_lower, ci_upper):
         case (None, None):
             return  # both missing, don't validate
-        case (float(), float()) if ci_lower <= ci_upper:
-            return  # both floats, check ordering
-        case (float(), float()):
-            raise ValueError("ci_lower must be less than or equal to ci_upper")
+        case (float() as lower, float() as upper):
+            if lower <= upper:
+                return  # both floats, check ordering
+            else:
+                raise ValueError("ci_lower must be less than or equal to ci_upper")
         case (float() | None) | (None, float()):
             raise ValueError("Provide both ci_lower and ci_upper or neither")
         case _:

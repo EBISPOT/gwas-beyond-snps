@@ -1,7 +1,6 @@
 import pytest
-from pydantic import ValidationError
-
 from gwascatalog.sumstatlib.cnv.models import CNVSumstatModel
+from pydantic import ValidationError
 
 # these test cases only cover model specific validation
 

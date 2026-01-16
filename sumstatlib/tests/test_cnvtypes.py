@@ -1,11 +1,10 @@
 import pytest
-from helpers import run_type_validation_test
-
 from gwascatalog.sumstatlib.cnv.sumstat_types import (
     CNVEffectAllele,
     EffectDirectionField,
     ModelTypeField,
 )
+from helpers import run_type_validation_test
 
 # Test cases for CNVEffectAllele
 cnv_effect_allele_test_cases = [

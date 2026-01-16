@@ -1,7 +1,6 @@
 import pytest
-from pydantic import ValidationError
-
 from gwascatalog.sumstatlib.gene.models import GeneSumstatModel
+from pydantic import ValidationError
 
 # each test case is (input_data, context, expected_error, test_id)
 test_cases = [

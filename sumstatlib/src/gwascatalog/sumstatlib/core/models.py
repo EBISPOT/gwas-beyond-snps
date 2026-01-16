@@ -3,10 +3,9 @@ from __future__ import annotations
 import abc
 from typing import Self
 
+from gwascatalog.sumstatlib.core.sumstat_types import NegLog10pValue, PValue
 from pydantic import BaseModel, model_validator
 from pydantic_core.core_schema import ValidationInfo
-
-from gwascatalog.sumstatlib.core.sumstat_types import NegLog10pValue, PValue
 
 
 class BaseSumstatModel(BaseModel, abc.ABC):

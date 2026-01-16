@@ -1,11 +1,10 @@
 import pytest
-from helpers import run_type_validation_test
-
 from gwascatalog.sumstatlib.core.sumstat_types import (
     BasePairEnd,
     BasePairStart,
     Chromosome,
 )
+from helpers import run_type_validation_test
 
 chromosome_test_cases = [
     ("1", None),
