@@ -1,10 +1,11 @@
 import pytest
+from helpers import run_type_validation_test
+
 from gwascatalog.sumstatlib.gene.sumstat_types import (
     EnsemblGeneID,
     HGNCGeneSymbol,
     ZScore,
 )
-from helpers import run_type_validation_test
 
 # Test cases for HGNCGeneSymbol
 hgnc_symbol_test_cases = [

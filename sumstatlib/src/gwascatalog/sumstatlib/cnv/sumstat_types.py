@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from gwascatalog.sumstatlib.cnv.sumstat_enums import EffectDirection, ModelType
 from pydantic import Field
+
+from gwascatalog.sumstatlib.cnv.sumstat_enums import EffectDirection, ModelType
 
 cnv_regex = r"^(CNV|CN=?\d+)(,(CNV|CN=?\d+))*$"
 
@@ -11,11 +12,11 @@ CNVEffectAllele = Annotated[
     str,
     Field(
         description="""
-        The symbolic allele associated with the effect, optionally representing the 
+        The symbolic allele associated with the effect, optionally representing the
         copy number.
-        
+
         See how CNVs are represented at:
-        
+
         https://www.ensembl.org/info/docs/tools/vep/vep_formats.html#sv
         """,
         pattern=cnv_regex,

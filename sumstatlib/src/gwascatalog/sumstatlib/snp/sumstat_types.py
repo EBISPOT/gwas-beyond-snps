@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from gwascatalog.sumstatlib.snp.sumstat_enums import RefAlleleState
 from pydantic import Field
+
+from gwascatalog.sumstatlib.snp.sumstat_enums import RefAlleleState
 
 sequence_regex = r"^[ACGT]$"
 SNPEffectAllele = Annotated[

@@ -11,9 +11,9 @@ import warnings
 warnings.warn(
     """
     The 'snp' package contains experimental code and is not production-ready.
-    
+
     Please don't use this library to validate SNP summary statistics.
-    
+
     Instead use: https://github.com/ebispot/gwas-sumstats-tools
     """,
     category=UserWarning,

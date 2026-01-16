@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Self, final
 
+from pydantic import ConfigDict, model_validator
+
 from gwascatalog.sumstatlib.core.helpers import check_confidence_interval_structure
 from gwascatalog.sumstatlib.core.models import BaseSumstatModel
 from gwascatalog.sumstatlib.core.sumstat_types import (
@@ -17,7 +19,6 @@ from gwascatalog.sumstatlib.gene.sumstat_types import (
     HGNCGeneSymbol,
     ZScore,
 )
-from pydantic import ConfigDict, model_validator
 
 
 @final

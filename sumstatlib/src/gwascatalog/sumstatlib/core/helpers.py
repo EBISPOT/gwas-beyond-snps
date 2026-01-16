@@ -4,10 +4,12 @@ Helper functions for pydantic model and type validation.
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from gwascatalog.sumstatlib.constants import CHROMOSOME_MAP
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def sumstat_path_validator(p: Path) -> Path:
@@ -41,8 +43,7 @@ def check_confidence_interval_structure(
         case (float() as lower, float() as upper):
             if lower <= upper:
                 return  # both floats, check ordering
-            else:
-                raise ValueError("ci_lower must be less than or equal to ci_upper")
+            raise ValueError("ci_lower must be less than or equal to ci_upper")
         case (float() | None) | (None, float()):
             raise ValueError("Provide both ci_lower and ci_upper or neither")
         case _:

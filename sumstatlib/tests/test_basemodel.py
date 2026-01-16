@@ -1,6 +1,7 @@
 import pytest
-from gwascatalog.sumstatlib.core.models import BaseSumstatModel
 from pydantic import ValidationError
+
+from gwascatalog.sumstatlib.core.models import BaseSumstatModel
 
 
 # BaseSumstatModel is an abstract base class and shouldn't be directly instantiated

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any, Literal, Self, final
 
+from pydantic import ConfigDict, PrivateAttr, computed_field, model_validator
+
 from gwascatalog.sumstatlib.cnv.sumstat_types import (
     CNVEffectAllele,
     EffectDirectionField,
@@ -15,7 +17,6 @@ from gwascatalog.sumstatlib.core.sumstat_types import (
     Chromosome,
     SampleSizePerVariant,
 )
-from pydantic import ConfigDict, PrivateAttr, computed_field, model_validator
 
 effect_allele_default: Literal["CNV"] = "CNV"
 
@@ -60,7 +61,7 @@ class CNVSumstatModel(BaseSumstatModel):
         self._assembly = GenomeAssembly(context["assembly"])
 
     def validate_semantics(self) -> None:
-        # TODO: validate start location is smaller than chromosome size?
+        # validate start location is smaller than chromosome size?
         raise NotImplementedError
 
     @computed_field

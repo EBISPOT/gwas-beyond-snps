@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pydantic import BaseModel
+
 from gwascatalog.sumstatlib.core.sumstat_types import (
     BasePairLocation,
     Beta,
@@ -22,7 +24,6 @@ from gwascatalog.sumstatlib.snp.sumstat_types import (
     SNPEffectAllele,
     VariantId,
 )
-from pydantic import BaseModel
 
 
 class SNPSumStat(BaseModel):
