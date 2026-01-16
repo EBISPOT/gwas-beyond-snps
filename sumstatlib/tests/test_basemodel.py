@@ -3,6 +3,14 @@ from pydantic import ValidationError
 
 from gwascatalog.sumstatlib.core.models import BaseSumstatModel
 
+
+# BaseSumstatModel is an abstract base class and shouldn't be directly instantiated
+# implement a dummy concrete class to test p value handling
+class DummySumstatModel(BaseSumstatModel):
+    def validate_semantics(self) -> None:
+        pass  # minimal implementation
+
+
 test_cases = [
     # valid p-value
     (
@@ -50,7 +58,7 @@ test_cases = [
 @pytest.mark.parametrize("input_data,context,expected_error", test_cases)
 def test_basemodel(input_data, context, expected_error):
     if expected_error is None:
-        model = BaseSumstatModel.model_validate(input_data, context=context)
+        model = DummySumstatModel.model_validate(input_data, context=context)
         # simple check now that the model initialised
         assert list(model.__class__.model_fields.keys()) == [
             "p_value",
@@ -58,7 +66,7 @@ def test_basemodel(input_data, context, expected_error):
         ]
     else:
         with pytest.raises(ValidationError) as exc_info:
-            BaseSumstatModel.model_validate(input_data, context=context)
+            DummySumstatModel.model_validate(input_data, context=context)
 
         # Check that the error string contains the expected snippet
         assert expected_error in str(exc_info.value)

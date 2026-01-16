@@ -32,7 +32,7 @@ def chromosome_to_integer(chromosome: Any) -> int:
     return chrom
 
 
-def check_confidence_intervals(
+def check_confidence_interval_structure(
     *, ci_lower: float | None, ci_upper: float | None
 ) -> None:
     match (ci_lower, ci_upper):

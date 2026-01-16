@@ -36,8 +36,10 @@ class CNVModel(BaseSumstatModel):
 
     See https://docs.pydantic.dev/latest/concepts/validators/#validation-data for more
         details.
+
     Validation context keys:
       - assembly (GenomeAssembly, mandatory)
+      - allow_zero_pvalues (bool, optional):
     """
 
     model_config = ConfigDict(extra="allow")
@@ -62,6 +64,9 @@ class CNVModel(BaseSumstatModel):
             raise ValueError("genome assembly must be provided via validation context")
 
         self._assembly = GenomeAssembly(context["assembly"])
+
+    def validate_semantics(self) -> None:
+        raise NotImplementedError
 
     @computed_field
     @property
