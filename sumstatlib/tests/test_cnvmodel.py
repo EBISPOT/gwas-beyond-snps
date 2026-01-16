@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from gwascatalog.sumstatlib.cnv.models import CNVModel
+from gwascatalog.sumstatlib.cnv.models import CNVSumstatModel
 
 # these test cases only cover model specific validation
 
@@ -54,7 +54,7 @@ test_cases = [
 @pytest.mark.parametrize("input_data,context,expected_error", test_cases)
 def test_cnvmodel(input_data, context, expected_error):
     if expected_error is None:
-        model = CNVModel.model_validate(input_data, context=context)
+        model = CNVSumstatModel.model_validate(input_data, context=context)
         # simple check now that the model initialised
         assert (
             model.cnv_id
@@ -64,7 +64,7 @@ def test_cnvmodel(input_data, context, expected_error):
         )
     else:
         with pytest.raises(ValidationError) as exc_info:
-            CNVModel.model_validate(input_data, context=context)
+            CNVSumstatModel.model_validate(input_data, context=context)
 
         # Check that the error string contains the expected snippet
         assert expected_error in str(exc_info.value)

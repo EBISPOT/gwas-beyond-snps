@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from gwascatalog.sumstatlib.gene.models import GeneModel
+from gwascatalog.sumstatlib.gene.models import GeneSumstatModel
 
 # each test case is (input_data, context, expected_error, test_id)
 test_cases = [
@@ -101,9 +101,9 @@ test_cases = [
 )
 def test_genemodel(input_data, context, expected_error, test_id):
     if expected_error is None:
-        _ = GeneModel.model_validate(input_data, context=context)
+        _ = GeneSumstatModel.model_validate(input_data, context=context)
         assert True
     else:
         with pytest.raises(ValidationError) as exc_info:
-            GeneModel.model_validate(input_data, context=context)
+            GeneSumstatModel.model_validate(input_data, context=context)
         assert expected_error in str(exc_info.value)

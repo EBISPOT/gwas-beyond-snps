@@ -25,7 +25,7 @@ effect_allele_default: Literal["CNV"] = "CNV"
 
 
 @final
-class CNVModel(BaseSumstatModel):
+class CNVSumstatModel(BaseSumstatModel):
     """
     Copy Number Variant (CNV) GWAS summary statistic model.
 
@@ -49,8 +49,6 @@ class CNVModel(BaseSumstatModel):
     base_pair_end: BasePairEnd
     effect_direction: EffectDirectionField
     effect_allele: CNVEffectAllele = effect_allele_default
-    p_value: PValue | None = None
-    neg_log10_pvalue: NegLog10pValue | None = None
     model_type: ModelTypeField
     n: SampleSizePerVariant | None = None
 

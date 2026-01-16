@@ -22,7 +22,7 @@ from gwascatalog.sumstatlib.gene.sumstat_types import (
 
 
 @final
-class GeneModel(BaseSumstatModel):
+class GeneSumstatModel(BaseSumstatModel):
     """
     Gene-based GWAS summary statistic model.
 
