@@ -27,8 +27,8 @@ modern framework.
 
 ## Decision
 
-Summary statistics data models will now be defined in Pydantic v2 models in a new
-repository. The Pydantic data model should be considered the canonical
+Summary statistics data models will now be defined in Pydantic v2 models in a
+new repository. The Pydantic data model should be considered the canonical
 reference. Documentation should be generated from code and annotated.
 
 Pydantic v2 has better support for annotated types and typing, significantly
@@ -42,11 +42,13 @@ Validation will be implemented using modern Python techniques, including:
 
 * Fields (e.g. p-value) must be defined as annotated types
 * Summary statistics data models are composed of custom types
-* [ABCs](https://docs.python.org/3/library/abc.html) are used to define public interfaces for consumers of data models (e.g. validation CLI)
+* [ABCs](https://docs.python.org/3/library/abc.html) are used to define public
+  interfaces for consumers of data models (e.g. validation CLI)
 * Validation is split into a library and CLI application using
   [the uv workspace pattern](https://docs.astral.sh/uv/concepts/projects/workspaces/)
 
-This package will initially implement data models for gene-based and CNV data only.
+This package will initially implement data models for gene-based and CNV data
+only.
 
 ## Consequences
 
