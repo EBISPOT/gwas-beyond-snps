@@ -58,10 +58,11 @@ GWAS Catalog metadata schema as needed (e.g. assembly, co-ordinate system).
 
 ## Consequences
 
-This data model intentionally introduces a breaking change compared with
-SNP-based summary statistics: Multiple models are permitted in a single scoring
-file. Traditionally authors of SNP-based GWAS may run multiple models but
-typically only submit the results from a single "best" model.
+This data model intentionally introduces a logical inconsistency compared with
+SNP-based summary statistics: Multiple genetic association models are permitted
+in a single scoring file. Traditionally authors of SNP-based GWAS may run
+multiple models but typically only submit the results from a single "best"
+model.
 
 We discussed changing SNP-based summary statistics to support a model type
 field, but this would break consumers of SNP-based summary statistics, so we
