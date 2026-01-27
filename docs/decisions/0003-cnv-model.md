@@ -29,9 +29,6 @@ At a minimum, a CNV GWAS record must include:
 * [MANDATORY] p-value or negative log10 p-value
 * [MANDATORY] Direction in which the CNV affects a trait (e.g., positive,
   negative, ambiguous)
-* [MANDATORY] Effect allele, which can be used to define copy number state
-  * Default value is "CNV" like [Ensembl VEP annotations](https://ensembl.org/info/docs/tools/vep/vep_formats.html#sv))
-  * Copy numbers are defined as CN3, CN=3, etc (see VEP annotations)
 * [MANDATORY] Genetic association model type (e.g., additive, dominant,
   recessive, dosage-sensitive)
 
