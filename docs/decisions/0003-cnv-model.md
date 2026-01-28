@@ -30,7 +30,7 @@ A CNV GWAS record must include the follow fields:
 | end               | Yes         | Positive integer; genomic end co-ordinate; must satisfy `end ≥ start`                    |
 | p_value           | Conditional | Float in (0,1]; mutually exclusive with `neg_log10_p_value`                              |
 | neg_log10_p_value | Conditional | Float ≥ 0; mutually exclusive with `p_value`                                             |
-| cnv_direction     | Yes         | Controlled vocabulary indicating copy number change (e.g., `deletion`, `duplication`)    |
+| effect_direction  | Yes         | Controlled vocabulary indicating direction in which the CNV affects a trait              |
 | model_type        | Yes         | Controlled vocabulary for association model; distinguishes multiple models within a file |
 | sample_size       | No          | Optional positive integer; number of samples contributing to this association record     |
 
@@ -72,3 +72,8 @@ summary statistics consumers.
 
 In the future the GWAS Catalog may choose to enforce one model per CNV summary
 statistics file.
+
+The data model is designed to allow additional fields in the future to respond
+to evolving community requirements. However, some future additions may not be
+backwards-compatible. Consumers of the data should account for potential schema
+evolution when designing pipelines.

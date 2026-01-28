@@ -76,3 +76,8 @@ other resources collect this kind of data (e.g. OpenTargets).
 
 We will accept and monitor the risk of lower completeness in exchange for
 consistency, searchability, and interoperability.
+
+The data model is designed to allow additional fields in the future to respond
+to evolving community requirements. However, some future additions may not be
+backwards-compatible. Consumers of the data should account for potential schema
+evolution when designing pipelines.
