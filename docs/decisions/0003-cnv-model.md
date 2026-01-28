@@ -33,7 +33,9 @@ A CNV GWAS record must include the follow fields:
 | cnv_direction     | Yes         | Controlled vocabulary indicating copy number change (e.g., `deletion`, `duplication`)    |
 | model_type        | Yes         | Controlled vocabulary for association model; distinguishes multiple models within a file |
 | sample_size       | No          | Optional positive integer; number of samples contributing to this association record     |
-| custom_fields     | No          | Authors may include additional fields after mandatory and optional fields                |
+
+Authors may choose to include a reasonable number of custom fields, which will
+be included after mandatory and optional fields.
 
 Some additional fields will be computed, including:
 
