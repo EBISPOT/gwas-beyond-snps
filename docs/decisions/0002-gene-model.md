@@ -21,21 +21,22 @@ common data patterns a data model was proposed.
 
 ## Decision
 
-| Field                     | Validation rule                                             |
-|---------------------------|-------------------------------------------------------------|
-| Ensembl gene ID           | At least one gene identifier MUST be provided; preferred ID |
-| HGNC Symbol               | Required if Ensembl gene ID is not provided                 |
-| p-value                   | Exactly one of p-value or −log10(p-value) MUST be provided  |
-| −log10(p-value)           | Exactly one of p-value or −log10(p-value) MUST be provided  |
-| beta                      | At most one of beta, odds ratio, or z-score MAY be provided |
-| standard error            | Required if beta is provided                                |
-| odds ratio                | At most one of beta, odds ratio, or z-score MAY be provided |
-| CI lower                  | Required if odds ratio is provided                          |
-| CI upper                  | Required if odds ratio is provided                          |
-| z-score                   | At most one of beta, odds ratio, or z-score MAY be provided |
-| chromosome                | If provided, start and end MUST also be provided            |
-| start                     | Required if chromosome is provided                          |
-| end                       | Required if chromosome is provided                          |
+| Field           | Validation rule                                             |
+|-----------------|-------------------------------------------------------------|
+| Ensembl gene ID | At least one gene identifier MUST be provided; preferred ID |
+| HGNC Symbol     | Required if Ensembl gene ID is not provided                 |
+| p-value         | Exactly one of p-value or −log10(p-value) MUST be provided  |
+| −log10(p-value) | Exactly one of p-value or −log10(p-value) MUST be provided  |
+| beta            | At most one of beta, odds ratio, or z-score MAY be provided |
+| standard error  | Required if beta is provided                                |
+| odds ratio      | At most one of beta, odds ratio, or z-score MAY be provided |
+| CI lower        | Required if odds ratio is provided                          |
+| CI upper        | Required if odds ratio is provided                          |
+| z-score         | At most one of beta, odds ratio, or z-score MAY be provided |
+| chromosome      | If provided, start and end MUST also be provided            |
+| start           | Required if chromosome is provided                          |
+| end             | Required if chromosome is provided                          |
+| sample size (n) | Optional positive integer                                   |
 
 The GWAS Catalog Scientific Advisory Board recommended making effect size an
 optional field for gene-based analyses. Many existing studies do not include a

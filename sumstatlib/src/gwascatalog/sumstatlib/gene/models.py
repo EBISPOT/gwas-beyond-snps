@@ -10,9 +10,11 @@ from gwascatalog.sumstatlib.core.sumstat_types import (
     BasePairEnd,
     BasePairStart,
     Beta,
+    Chromosome,
     ConfidenceIntervalLower,
     ConfidenceIntervalUpper,
     OddsRatio,
+    StandardError, SampleSizePerVariant,
 )
 from gwascatalog.sumstatlib.gene.sumstat_types import (
     EnsemblGeneID,
@@ -45,6 +47,7 @@ class GeneSumstatModel(BaseSumstatModel):
     hgnc_symbol: HGNCGeneSymbol | None = None
 
     # optional coordinates for the field
+    chromosome: Chromosome | None = None
     base_pair_start: BasePairStart | None = None
     base_pair_end: BasePairEnd | None = None
 
@@ -52,28 +55,35 @@ class GeneSumstatModel(BaseSumstatModel):
     z_score: ZScore | None = None
     odds_ratio: OddsRatio | None = None
     beta: Beta | None = None
+    standard_error: StandardError | None = None
 
-    confidence_interval_lower: ConfidenceIntervalLower | None = None
+    # encouraged
+    confidence_interval_lower: ConfidenceIntervalLower | None = (
+        None  # ci for odds ratio
+    )
     confidence_interval_upper: ConfidenceIntervalUpper | None = None
+
+    n: SampleSizePerVariant | None = None
 
     def validate_semantics(self):
         raise NotImplementedError
 
     @model_validator(mode="after")
     def validate_location(self) -> Self:
-        match (self.base_pair_start, self.base_pair_end):
-            case None, None:
+        match (self.chromosome, self.base_pair_start, self.base_pair_end):
+            case None, None, None:
                 return self
-            case int(), None | None, int():
-                raise ValueError("Provide both values: base_pair_start, base_pair_end")
-            case int() as start, int() as end:
+            case int(), int() as start, int() as end:
                 if end <= start:
                     raise ValueError(
                         "base_pair_end must be greater than base_pair_start"
                     )
                 return self
+            case _, int(), None | _, None, int():
+                raise ValueError("Provide both values: base_pair_start, base_pair_end")
             case _:
-                raise ValueError("Bad base_pair_start, base_pair_end")
+                raise ValueError("Bad combination of chromosome, base_pair_start,"
+                                 " base_pair_end")
 
     @model_validator(mode="after")
     def check_gene_name_fields(self) -> Self:
