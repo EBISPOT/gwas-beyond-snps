@@ -22,7 +22,7 @@ common data patterns a data model was proposed.
 
 At a minimum, a gene-based GWAS record must include:
 
-* [MANDATORY] A gene name encoded as a HGNC symbol or Ensembl Gene ID
+* [MANDATORY] A gene name encoded as a Ensembl Gene ID (preferred) or HGNC symbol
 * [MANDATORY] A p-value or negative log10 p-value (mutually exclusive)
 
 The GWAS Catalog Scientific Advisory Board recommended making effect size an
