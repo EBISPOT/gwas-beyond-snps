@@ -1,4 +1,4 @@
-# Summary statistics class design
+# Define reusable Pydantic models for summary statistics
 
 Date: 2026-01-27
 

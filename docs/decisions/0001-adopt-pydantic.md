@@ -1,4 +1,4 @@
-# Adopting Pydantic v2 for summary statistics data models
+# Adopt Pydantic v2 for summary statistics data models
 
 Date: 2026-01-23
 

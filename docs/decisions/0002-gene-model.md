@@ -21,22 +21,22 @@ common data patterns a data model was proposed.
 
 ## Decision
 
-| Field           | Validation rule                                             |
-|-----------------|-------------------------------------------------------------|
-| Ensembl gene ID | At least one gene identifier MUST be provided; preferred ID |
-| HGNC Symbol     | Required if Ensembl gene ID is not provided                 |
-| p-value         | Exactly one of p-value or −log10(p-value) MUST be provided  |
-| −log10(p-value) | Exactly one of p-value or −log10(p-value) MUST be provided  |
-| beta            | At most one of beta, odds ratio, or z-score MAY be provided |
-| standard error  | Required if beta is provided                                |
-| odds ratio      | At most one of beta, odds ratio, or z-score MAY be provided |
-| CI lower        | Required if odds ratio is provided                          |
-| CI upper        | Required if odds ratio is provided                          |
-| z-score         | At most one of beta, odds ratio, or z-score MAY be provided |
-| chromosome      | If provided, start and end MUST also be provided            |
-| start           | Required if chromosome is provided                          |
-| end             | Required if chromosome is provided                          |
-| sample size (n) | Optional positive integer                                   |
+| Field             | Required?   | Validation notes                                                                     |
+|-------------------|-------------|--------------------------------------------------------------------------------------|
+| ensembl_gene_id   | Conditional | At least one gene identifier MUST be provided; preferred ID format `ENSG00000000000` |
+| hgnc_symbol       | Conditional | Required if `ensembl_gene_id` is not provided; string, official HGNC symbol          |
+| p_value           | Conditional | Float in (0,1]; mutually exclusive with `neg_log10_p_value`                          |
+| neg_log10_p_value | Conditional | Float ≥ 0; mutually exclusive with `p_value`                                         |
+| beta              | Conditional | At most one of `beta`, `odds_ratio`, or `z_score` may be provided; float             |
+| standard_error    | Conditional | Required if `beta` is provided; float                                                |
+| odds_ratio        | Conditional | At most one of `beta`, `odds_ratio`, or `z_score` may be provided; float             |
+| ci_lower          | Conditional | Required if `odds_ratio` is provided; float                                          |
+| ci_upper          | Conditional | Required if `odds_ratio` is provided; float                                          |
+| z_score           | Conditional | At most one of `beta`, `odds_ratio`, or `z_score` may be provided; float             |
+| chromosome        | Conditional | Integer; must match GWAS-SSF standard (1-22, X = 23, Y = 24, MT = 25)                |
+| start             | Conditional | Positive integer; required if `chromosome` is provided                               |
+| end               | Conditional | Positive integer; required if `chromosome` is provided                               |
+| sample_size       | Optional    | Positive integer; number of samples contributing to this association record          |
 
 The GWAS Catalog Scientific Advisory Board recommended making effect size an
 optional field for gene-based analyses. Many existing studies do not include a

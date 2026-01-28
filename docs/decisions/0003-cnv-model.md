@@ -1,4 +1,4 @@
-# Copy number variant (CNV) GWAS data model
+# Define Copy Number Variant GWAS data model
 
 Date: 2026-01-26
 
@@ -21,23 +21,19 @@ SNP-based GWAS.
 
 ## Decision
 
-At a minimum, a CNV GWAS record must include:
+A CNV GWAS record must include the follow fields:
 
-* [MANDATORY] Chromosome
-* [MANDATORY] Start position (metadata defines coordinate system)
-* [MANDATORY] End position (metadata defines coordinate system)
-* [MANDATORY] p-value or negative log10 p-value
-* [MANDATORY] Direction in which the CNV affects a trait (e.g., positive,
-  negative, ambiguous)
-* [MANDATORY] Genetic association model type (e.g., additive, dominant,
-  recessive, dosage-sensitive)
-
-Optional but recommended fields include:
-
-* [OPTIONAL] per-CNV sample size
-
-Authors may choose to include a reasonable number of custom fields, which will
-be included after mandatory and optional fields.
+| Field             | Required    | Validation notes                                                                         |
+|-------------------|-------------|------------------------------------------------------------------------------------------|
+| chromosome        | Yes         | Integer; must match GWAS-SSF standard (1-22, X = 23, Y = 24, MT = 25)                    |
+| start             | Yes         | Positive integer; genomic start co-ordinate (co-ordinate system set in metadata)         |
+| end               | Yes         | Positive integer; genomic end co-ordinate; must satisfy `end ≥ start`                    |
+| p_value           | Conditional | Float in (0,1]; mutually exclusive with `neg_log10_p_value`                              |
+| neg_log10_p_value | Conditional | Float ≥ 0; mutually exclusive with `p_value`                                             |
+| cnv_direction     | Yes         | Controlled vocabulary indicating copy number change (e.g., `deletion`, `duplication`)    |
+| model_type        | Yes         | Controlled vocabulary for association model; distinguishes multiple models within a file |
+| sample_size       | No          | Optional positive integer; number of samples contributing to this association record     |
+| custom_fields     | No          | Authors may include additional fields after mandatory and optional fields                |
 
 Some additional fields will be computed, including:
 
@@ -53,6 +49,12 @@ The canonical representation of the data model is the Pydantic model defined in
 this repository. Required context will be injected during validation from the
 GWAS Catalog metadata schema as needed (e.g. assembly, co-ordinate system).
 
+Files are expected to contain at least 100,000 rows; smaller files may be
+rejected or flagged for review. This heuristic is based on existing guidelines
+for SNP submissions. The GWAS Catalog accepts only genome-wide (not targeted)
+analyses, and substantially smaller files are unlikely to represent valid CNV
+GWAS results.
+
 ## Consequences
 
 This data model intentionally introduces a divergence from SNP-based summary
@@ -65,3 +67,6 @@ field, but this would break existing consumers of SNP-based data. We therefore
 decided to introduce this field only for CNVs. This approach enables ingestion
 and harmonisation of CNV GWAS data while avoiding impact on existing SNP-based
 summary statistics consumers.
+
+In the future the GWAS Catalog may choose to enforce one model per CNV summary
+statistics file.
