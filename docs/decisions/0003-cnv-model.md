@@ -21,23 +21,37 @@ SNP-based GWAS.
 
 ## Decision
 
-A CNV GWAS record must include the follow fields:
+### Mandatory fields
 
-| Field             | Required    | Validation notes                                                                         |
-|-------------------|-------------|------------------------------------------------------------------------------------------|
-| chromosome        | Yes         | Integer; must match GWAS-SSF standard (1-22, X = 23, Y = 24, MT = 25)                    |
-| start             | Yes         | Positive integer; genomic start co-ordinate (co-ordinate system set in metadata)         |
-| end               | Yes         | Positive integer; genomic end co-ordinate; must satisfy `end ≥ start`                    |
-| p_value           | Conditional | Float in (0,1]; mutually exclusive with `neg_log10_p_value`                              |
-| neg_log10_p_value | Conditional | Float ≥ 0; mutually exclusive with `p_value`                                             |
-| effect_direction  | Yes         | Controlled vocabulary indicating direction in which the CNV affects a trait              |
-| model_type        | Yes         | Controlled vocabulary for association model; distinguishes multiple models within a file |
-| sample_size       | No          | Optional positive integer; number of samples contributing to this association record     |
+| Field             | Validation notes                                                                         |
+|-------------------|------------------------------------------------------------------------------------------|
+| chromosome        | Integer; must match GWAS-SSF standard (1-22, X = 23, Y = 24, MT = 25)                    |
+| start             | Positive integer; genomic start co-ordinate (co-ordinate system set in metadata)         |
+| end               | Positive integer; genomic end co-ordinate; must satisfy `end ≥ start`                    |
+| p_value           | Float in (0,1]; mutually exclusive with `neg_log10_p_value`                              |
+| neg_log10_p_value | Float ≥ 0; mutually exclusive with `p_value`                                             |
+| beta              | A primary effect size must be indicated; float                                           |
+| odds_ratio        | A primary effect size must be indicated; float                                           |
+| z_score           | A primary effect size must be indicated; float                                           |
+| effect_direction  | Direction in which the CNV affects a trait; summarising effect size magnitude            |
+| model_type        | Controlled vocabulary for association model; distinguishes multiple models within a file |
+
+A primary effect size must be indicated (e.g. beta, z-score, odds ratio).
+Multiple effect size types can be included as custom fields.
+
+### Optional fields
+
+| Field          | Validation notes                                                                     |
+|----------------|--------------------------------------------------------------------------------------|
+| sample_size    | Optional positive integer; number of samples contributing to this association record |
+| standard_error | Required if `beta` is provided; float                                                |
+| ci_lower       | Required if `odds_ratio` is provided; float                                          |
+| ci_upper       | Required if `odds_ratio` is provided; float                                          |
 
 Authors may choose to include a reasonable number of custom fields, which will
 be included after mandatory and optional fields.
 
-Some additional fields will be computed, including:
+### Computed fields
 
 * CNV identifiers `${chromosome}:${start}:${end}:${assembly}`
 * CNV length (end - start) in bases
