@@ -54,14 +54,12 @@ be included after mandatory and optional fields. A primary effect size must be
 indicated (e.g. beta, z-score, odds ratio). Multiple effect size types can be
 included as custom fields.
 
-No changes are required to the GWAS Catalog metadata schema, except adding an
-enumerated and mutually exclusive flag to indicate the type of genetic
+### Metadata
+
+No structural changes are required to the GWAS Catalog metadata schema, except
+adding an enumerated and mutually exclusive flag to indicate the type of genetic
 variation being studied (e.g. gene-based, SNP, CNV). Fields like genome assembly
 are defined in the metadata schema.
-
-The canonical representation of the data model is the Pydantic model defined in
-this repository. Required context will be injected during validation from the
-GWAS Catalog metadata schema as needed (e.g. assembly, co-ordinate system).
 
 Files are expected to contain at least 10,000 rows; smaller files may be
 rejected or flagged for review. This heuristic is based on a survey of existing
@@ -70,6 +68,16 @@ Given that there are roughly 20,000 protein-coding genes in the human genome,
 and that the GWAS Catalog accepts only genome-wide (not targeted) analyses,
 substantially smaller files are unlikely to represent valid gene-based GWAS
 results.
+
+### Source of truth
+
+The canonical representation of the data model is the Pydantic model defined in
+this repository.
+
+Required context will be injected during validation from the
+GWAS Catalog metadata schema as needed (e.g. assembly, co-ordinate system).
+
+Documentation will be generated from the annotated Pydantic model.
 
 ## Consequences
 

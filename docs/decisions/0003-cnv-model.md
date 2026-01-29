@@ -33,6 +33,12 @@ SNP-based GWAS.
 | effect_direction  | Direction in which the CNV affects a trait; summarising effect size magnitude            |
 | model_type        | Controlled vocabulary for association model; distinguishes multiple models within a file |
 
+### Optional fields
+
+| Field          | Validation notes                                                                     |
+|----------------|--------------------------------------------------------------------------------------|
+| sample_size    | Optional positive integer; number of samples contributing to this association record |
+
 ### Conditional fields
 
 | Field             | Validation notes                                            |
@@ -47,12 +53,6 @@ SNP-based GWAS.
 A primary effect size must be indicated (e.g. beta, z-score, odds ratio).
 Multiple effect size types can be included as custom fields.
 
-### Optional fields
-
-| Field          | Validation notes                                                                     |
-|----------------|--------------------------------------------------------------------------------------|
-| sample_size    | Optional positive integer; number of samples contributing to this association record |
-
 Authors may choose to include a reasonable number of custom fields, which will
 be included after mandatory and optional fields.
 
@@ -61,20 +61,28 @@ be included after mandatory and optional fields.
 * CNV identifiers `${chromosome}:${start}:${end}:${assembly}`
 * CNV length (end - start) in bases
 
-No changes are required to the GWAS Catalog metadata schema, except adding an
-enumerated and mutually exclusive flag to indicate the type of genetic
+### Metadata
+
+No structural changes are required to the GWAS Catalog metadata schema, except
+adding an enumerated and mutually exclusive flag to indicate the type of genetic
 variation being studied (e.g. gene-based, SNP, CNV). Fields like genome assembly
 are defined in the metadata schema.
-
-The canonical representation of the data model is the Pydantic model defined in
-this repository. Required context will be injected during validation from the
-GWAS Catalog metadata schema as needed (e.g. assembly, co-ordinate system).
 
 Files are expected to contain at least 100,000 rows; smaller files may be
 rejected or flagged for review. This heuristic is based on existing guidelines
 for SNP submissions. The GWAS Catalog accepts only genome-wide (not targeted)
 analyses, and substantially smaller files are unlikely to represent valid CNV
 GWAS results.
+
+### Source of truth
+
+The canonical representation of the data model is the Pydantic model defined in
+this repository.
+
+Required context will be injected during validation from the
+GWAS Catalog metadata schema as needed (e.g. assembly, co-ordinate system).
+
+Documentation will be generated from the annotated Pydantic model.
 
 ## Consequences
 
