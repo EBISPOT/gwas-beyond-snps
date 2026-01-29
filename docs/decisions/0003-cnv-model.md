@@ -53,6 +53,8 @@ SNP-based GWAS.
 A primary effect size must be indicated (e.g. beta, z-score, odds ratio).
 Multiple effect size types can be included as custom fields.
 
+### Custom fields
+
 Authors may choose to include a reasonable number of custom fields, which will
 be included after mandatory and optional fields.
 

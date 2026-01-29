@@ -35,24 +35,29 @@ common data patterns a data model was proposed.
 | Field          | Validation notes                                                            |
 |----------------|-----------------------------------------------------------------------------|
 | beta           | A primary effect size must be indicated; float                              |
-| standard_error | Required if `beta` is provided; float                                       |
 | odds_ratio     | A primary effect size must be indicated; float                              |
-| ci_lower       | Required if `odds_ratio` is provided; float                                 |
-| ci_upper       | Required if `odds_ratio` is provided; float                                 |
 | z_score        | A primary effect size must be indicated; float                              |
 | chromosome     | Integer; must match GWAS-SSF standard (1-22, X = 23, Y = 24, MT = 25)       |
-| start          | Positive integer; required if `chromosome` is provided                      |
-| end            | Positive integer; required if `chromosome` is provided                      |
 | sample_size    | Positive integer; number of samples contributing to this association record |
 
 The GWAS Catalog Scientific Advisory Board recommended making effect size an
 optional field for gene-based analyses. Many existing studies do not include a
 measure of effect size.
 
+### Conditional fields
+
+| Field          | Validation notes                                                            |
+|----------------|-----------------------------------------------------------------------------|
+| standard_error | Required if `beta` is provided; float                                       |
+| ci_lower       | Required if `odds_ratio` is provided; float                                 |
+| ci_upper       | Required if `odds_ratio` is provided; float                                 |
+| start          | Positive integer; required if `chromosome` is provided                      |
+| end            | Positive integer; required if `chromosome` is provided                      |
+
+### Custom fields
+
 Authors may choose to include a reasonable number of custom fields, which will
-be included after mandatory and optional fields. A primary effect size must be
-indicated (e.g. beta, z-score, odds ratio). Multiple effect size types can be
-included as custom fields.
+be included after mandatory and optional fields.
 
 ### Metadata
 
