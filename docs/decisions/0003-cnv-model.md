@@ -33,9 +33,6 @@ SNP-based GWAS.
 | effect_direction  | Direction in which the CNV affects a trait; summarising effect size magnitude            |
 | model_type        | Controlled vocabulary for association model; distinguishes multiple models within a file |
 
-A primary effect size must be indicated (e.g. beta, z-score, odds ratio).
-Multiple effect size types can be included as custom fields.
-
 ### Conditional fields
 
 | Field             | Validation notes                                            |
@@ -46,6 +43,9 @@ Multiple effect size types can be included as custom fields.
 | standard_error    | Required if `beta` is provided; float                       |
 | ci_lower          | Required if `odds_ratio` is provided; float                 |
 | ci_upper          | Required if `odds_ratio` is provided; float                 |
+
+A primary effect size must be indicated (e.g. beta, z-score, odds ratio).
+Multiple effect size types can be included as custom fields.
 
 ### Optional fields
 
