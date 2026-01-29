@@ -28,25 +28,30 @@ SNP-based GWAS.
 | chromosome        | Integer; must match GWAS-SSF standard (1-22, X = 23, Y = 24, MT = 25)                    |
 | start             | Positive integer; genomic start co-ordinate (co-ordinate system set in metadata)         |
 | end               | Positive integer; genomic end co-ordinate; must satisfy `end ≥ start`                    |
-| p_value           | Float in (0,1]; mutually exclusive with `neg_log10_p_value`                              |
-| neg_log10_p_value | Float ≥ 0; mutually exclusive with `p_value`                                             |
-| beta              | A primary effect size must be indicated; float                                           |
-| odds_ratio        | A primary effect size must be indicated; float                                           |
-| z_score           | A primary effect size must be indicated; float                                           |
 | effect_direction  | Direction in which the CNV affects a trait; summarising effect size magnitude            |
 | model_type        | Controlled vocabulary for association model; distinguishes multiple models within a file |
 
 A primary effect size must be indicated (e.g. beta, z-score, odds ratio).
 Multiple effect size types can be included as custom fields.
 
+### Conditional fields
+
+| Field             | Validation notes                                            |
+|-------------------|-------------------------------------------------------------|
+| p_value           | Float in (0,1]; mutually exclusive with `neg_log10_p_value` |
+| neg_log10_p_value | Float ≥ 0; mutually exclusive with `p_value`                |
+| beta              | A primary effect size must be indicated; float              |
+| odds_ratio        | A primary effect size must be indicated; float              |
+| z_score           | A primary effect size must be indicated; float              |
+| standard_error    | Required if `beta` is provided; float                       |
+| ci_lower          | Required if `odds_ratio` is provided; float                 |
+| ci_upper          | Required if `odds_ratio` is provided; float                 |
+
 ### Optional fields
 
 | Field          | Validation notes                                                                     |
 |----------------|--------------------------------------------------------------------------------------|
 | sample_size    | Optional positive integer; number of samples contributing to this association record |
-| standard_error | Required if `beta` is provided; float                                                |
-| ci_lower       | Required if `odds_ratio` is provided; float                                          |
-| ci_upper       | Required if `odds_ratio` is provided; float                                          |
 
 Authors may choose to include a reasonable number of custom fields, which will
 be included after mandatory and optional fields.
