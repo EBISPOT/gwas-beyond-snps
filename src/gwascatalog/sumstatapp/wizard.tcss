@@ -1,0 +1,20 @@
+Screen {
+    align: center middle;
+}
+
+Vertical {
+    align: center middle;
+    width: 40%;
+    height: 40%;
+    border: wide white;
+}
+
+NavButtons {
+    align: center middle;
+    height: auto;
+    width: 100%;
+}
+
+#title {
+    content-align-horizontal: center;
+}
