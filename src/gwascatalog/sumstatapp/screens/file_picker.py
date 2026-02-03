@@ -8,8 +8,8 @@ from textual.reactive import reactive
 from textual.screen import Screen
 from textual.widgets import DirectoryTree, Label, Rule
 
-from ..constants import VALID_SUMSTAT_SUFFIXES
-from ..navbuttons import NavButtons
+from gwascatalog.sumstatapp.constants import VALID_SUMSTAT_SUFFIXES
+from gwascatalog.sumstatapp.navbuttons import NavButtons
 
 if TYPE_CHECKING:
     from collections.abc import Iterable

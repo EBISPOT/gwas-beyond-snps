@@ -1,7 +1,8 @@
 from .effect_size import EffectSizeScreen
 from .file_picker import FilePickerScreen
 from .genetic_variation import GeneticVariationScreen
-from .gwas_software import GWASSoftwareScreen
+from .highly_significant import HighlySignificantScreen
+from .p_value import PValueTypeScreen
 from .welcome import WelcomeScreen
 
 __all__ = [
@@ -9,5 +10,6 @@ __all__ = [
     "FilePickerScreen",
     "GeneticVariationScreen",
     "WelcomeScreen",
-    "GWASSoftwareScreen",
+    "HighlySignificantScreen",
+    "PValueTypeScreen",
 ]

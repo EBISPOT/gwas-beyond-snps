@@ -4,8 +4,8 @@ Screen {
 
 Vertical {
     align: center middle;
-    width: 40%;
-    height: 40%;
+    width: 75%;
+    height: 75%;
     border: wide white;
 }
 

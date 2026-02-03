@@ -6,9 +6,11 @@ from gwascatalog.sumstatapp.screens import (
     EffectSizeScreen,
     FilePickerScreen,
     GeneticVariationScreen,
-    GWASSoftwareScreen,
+    HighlySignificantScreen,
+    PValueTypeScreen,
     WelcomeScreen,
 )
+from gwascatalog.sumstatapp.wizardstate import WizardState
 
 
 class SumstatWizardApp(App):
@@ -17,7 +19,8 @@ class SumstatWizardApp(App):
         "welcome": WelcomeScreen,
         "effect_size": EffectSizeScreen,
         "genetic_variation": GeneticVariationScreen,
-        "software": GWASSoftwareScreen,
+        "p_value": PValueTypeScreen,
+        "highly_significant": HighlySignificantScreen,
         "file_picker": FilePickerScreen,
     }
 
@@ -25,9 +28,13 @@ class SumstatWizardApp(App):
         "welcome",
         "genetic_variation",
         "effect_size",
-        "software",
+        "p_value",
+        "highly_significant",
         "file_picker",
     ]
+
+    # store form responses
+    WIZARD_STATE = {}
 
     def on_mount(self) -> None:
         """Start the application on the welcome screen"""
@@ -44,10 +51,11 @@ class SumstatWizardApp(App):
             self.push_screen(next_name)
 
     def previous_screen(self) -> None:
-        idx = self.current_index
-        if idx > 0:
-            prev_name = self.SCREEN_ORDER[idx - 1]
-            self.push_screen(prev_name)
+        self.pop_screen()
+
+    @property
+    def state(self) -> WizardState:
+        return WizardState(**self.WIZARD_STATE)
 
 
 if __name__ == "__main__":

@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from textual.app import ComposeResult
 from textual.containers import Vertical
-from textual.screen import Screen
 from textual.widgets import Button, Rule, Static
 
 from gwascatalog.sumstatapp.navbuttons import NavButtons
+from gwascatalog.sumstatapp.screens.base_wizard_screen import WizardScreen
 
 WELCOME_TITLE = "Welcome to the [link='https://ebi.ac.uk/gwas']GWAS Catalog[/link] summary statistics tool 🧬🧪 "
 WELCOME_MSG = (
@@ -15,7 +15,7 @@ WELCOME_MSG = (
 )
 
 
-class WelcomeScreen(Screen):
+class WelcomeScreen(WizardScreen):
     name = "welcome"
 
     def compose(self) -> ComposeResult:
@@ -25,7 +25,12 @@ class WelcomeScreen(Screen):
             yield Static(WELCOME_MSG)
             yield NavButtons()
 
-    def on_mount(self) -> None:
+    def on_mount(self):
         # no previous button on the welcome screen
         prev_button = self.query_one("#back", Button)
         prev_button.remove()
+
+    def on_screen_resume(self):
+        # send a message that we're ready to proceed
+        # (no user input needed)
+        self.can_proceed = True
