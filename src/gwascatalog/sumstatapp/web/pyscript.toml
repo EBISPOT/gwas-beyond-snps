@@ -1,0 +1,13 @@
+# PyScript configuration for GWAS Catalog summary statistics validator.
+#
+# This file tells PyScript/Pyodide which Python packages to install
+# and where to find the local sumstatlib wheel.
+#
+# Build the wheel first:
+#   cd sumstatlib && uv build
+#   cp sumstatlib/dist/gwascatalog_sumstatlib-*.whl src/gwascatalog/sumstatapp/web/dist/
+
+packages = [
+  "pydantic",
+  "./dist/gwascatalog_sumstatlib-0.1.0-py3-none-any.whl",
+]
