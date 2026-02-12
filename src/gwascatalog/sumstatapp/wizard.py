@@ -58,6 +58,10 @@ class SumstatWizardApp(App):
         return WizardState(**self.WIZARD_STATE)
 
 
-if __name__ == "__main__":
+def main():
     app = SumstatWizardApp()
     app.run()
+
+
+if __name__ == "__main__":
+    main()

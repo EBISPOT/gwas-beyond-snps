@@ -3,8 +3,15 @@ from __future__ import annotations
 from textual.app import ComposeResult
 from textual.containers import Vertical
 from textual.screen import Screen
-from textual.widgets import Button, Collapsible, Label, RadioButton, RadioSet, Rule, \
-    Static
+from textual.widgets import (
+    Button,
+    Collapsible,
+    Label,
+    RadioButton,
+    RadioSet,
+    Rule,
+    Static,
+)
 
 from gwascatalog.sumstatapp.navbuttons import NavButtons
 from gwascatalog.sumstatapp.screens.base_wizard_screen import WizardScreen

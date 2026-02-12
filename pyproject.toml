@@ -18,10 +18,14 @@ classifiers = [
 ]
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["gwascatalog.sumstatlib"]
+dependencies = [
+    "gwascatalog.sumstatlib",
+    "textual>=7.3.0",
+    "textual-dev>=1.8.0",
+]
 
 [project.scripts]
-gwascatalog = "gwascatalog.sumstatapp.main:main"
+gwascatalog-submit-sumstat = "gwascatalog.sumstatapp.wizard:main"
 
 [tool.uv.workspace]
 members = [
