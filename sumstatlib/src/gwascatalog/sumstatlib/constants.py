@@ -18,3 +18,7 @@ CNV_FIELD_INDICES: Final[Mapping[str, int]] = {
     "neg_log_10_pvalue": 5,
     "model_type": 6,
 }
+
+# minimum number of genes in a gene-based GWAS analysis
+# see decision docs for justification
+MIN_GENE_RECORDS = 10_000

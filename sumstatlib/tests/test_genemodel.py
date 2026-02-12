@@ -18,6 +18,7 @@ test_cases = [
     (
         {
             "hgnc_symbol": "ISG20",
+            "chromosome": 1,
             "base_pair_start": 2,
             "base_pair_end": 1000,
             "z_score": 1,
@@ -30,6 +31,7 @@ test_cases = [
     (
         {
             "ensembl_gene_id": "ENSG00000172183",
+            "chromosome": 1,
             "base_pair_start": 2,
             "base_pair_end": 1000,
             "odds_ratio": 1,
@@ -42,6 +44,7 @@ test_cases = [
     (
         {
             "hgnc_symbol": "ISG20",
+            "chromosome": 1,
             "base_pair_start": 2,
             "base_pair_end": 1000,
             "z_score": 1,

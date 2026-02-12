@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from pydantic import Field, StringConstraints
+
+PrimaryEffectSizeField = Literal["beta", "odds_ratio", "z_score"]
 
 # reject lowercase letters and any punctuation
 # reject hyphens at the start and end of a symbol

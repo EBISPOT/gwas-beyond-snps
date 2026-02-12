@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Self, final
+from typing import TYPE_CHECKING, Self, final
 
-from pydantic import ConfigDict, model_validator
+from pydantic import PrivateAttr, model_validator
 
 from gwascatalog.sumstatlib.core.helpers import check_confidence_interval_structure
 from gwascatalog.sumstatlib.core.models import BaseSumstatModel
@@ -14,13 +14,18 @@ from gwascatalog.sumstatlib.core.sumstat_types import (
     ConfidenceIntervalLower,
     ConfidenceIntervalUpper,
     OddsRatio,
-    StandardError, SampleSizePerVariant,
+    StandardError,
+    SampleSizePerVariant,
 )
 from gwascatalog.sumstatlib.gene.sumstat_types import (
     EnsemblGeneID,
     HGNCGeneSymbol,
+    PrimaryEffectSizeField,
     ZScore,
 )
+
+if TYPE_CHECKING:
+    from typing import Any
 
 
 @final
@@ -40,8 +45,6 @@ class GeneSumstatModel(BaseSumstatModel):
       - allow_zero_pvalues (bool, optional):
     """
 
-    model_config = ConfigDict(extra="allow")
-
     # at least one type of gene name is mandatory
     ensembl_gene_id: EnsemblGeneID | None = None
     hgnc_symbol: HGNCGeneSymbol | None = None
@@ -51,7 +54,7 @@ class GeneSumstatModel(BaseSumstatModel):
     base_pair_start: BasePairStart | None = None
     base_pair_end: BasePairEnd | None = None
 
-    # only one type of effect size is allowed
+    # validation context: set primary effect size
     z_score: ZScore | None = None
     odds_ratio: OddsRatio | None = None
     beta: Beta | None = None
@@ -68,6 +71,19 @@ class GeneSumstatModel(BaseSumstatModel):
     def validate_semantics(self):
         raise NotImplementedError
 
+    # private attributes to avoid polluting the data model
+    # adopting this pattern because metadata are provided by a payload or CLI flag at
+    # runtime, so adding a field doesn't make sense
+    _primary_effect_size: PrimaryEffectSizeField = PrivateAttr()
+
+    def model_post_init(self, context: Any) -> None:
+        if "primary_effect_size" not in context:
+            raise ValueError(
+                "primary effect size field must be provided via validation context"
+            )
+
+        self._primary_effect_size = context["primary_effect_size"]
+
     @model_validator(mode="after")
     def validate_location(self) -> Self:
         match (self.chromosome, self.base_pair_start, self.base_pair_end):
@@ -82,8 +98,9 @@ class GeneSumstatModel(BaseSumstatModel):
             case _, int(), None | _, None, int():
                 raise ValueError("Provide both values: base_pair_start, base_pair_end")
             case _:
-                raise ValueError("Bad combination of chromosome, base_pair_start,"
-                                 " base_pair_end")
+                raise ValueError(
+                    "Bad combination of chromosome, base_pair_start, base_pair_end"
+                )
 
     @model_validator(mode="after")
     def check_gene_name_fields(self) -> Self:

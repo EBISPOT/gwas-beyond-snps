@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 from typing import TYPE_CHECKING, Self
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, ConfigDict, model_validator
 
 from gwascatalog.sumstatlib.core.sumstat_types import NegLog10pValue, PValue
 
@@ -24,6 +24,8 @@ class BaseSumstatModel(BaseModel, abc.ABC):
         If False, p_value == 0 or neg_log10_p_value == 0 is rejected.
         Defaults to False if not provided.
     """
+
+    model_config = ConfigDict(extra="allow")
 
     p_value: PValue | None = None
     neg_log10_p_value: NegLog10pValue | None = None

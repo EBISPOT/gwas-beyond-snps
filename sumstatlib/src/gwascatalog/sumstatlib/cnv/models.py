@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Literal, Self, final
 
-from pydantic import ConfigDict, PrivateAttr, computed_field, model_validator
+from pydantic import PrivateAttr, computed_field, model_validator
 
 from gwascatalog.sumstatlib.cnv.sumstat_types import (
     CNVEffectAllele,
@@ -38,8 +38,6 @@ class CNVSumstatModel(BaseSumstatModel):
       - assembly (GenomeAssembly, mandatory)
       - allow_zero_pvalues (bool, optional):
     """
-
-    model_config = ConfigDict(extra="allow")
 
     chromosome: Chromosome
     base_pair_start: BasePairStart
