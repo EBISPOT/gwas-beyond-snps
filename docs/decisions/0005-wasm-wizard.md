@@ -31,7 +31,7 @@ Build a **single-page static web application** using:
 - **PyScript (Pyodide)** to run `sumstatlib` in the browser
 - **Standard HTML5 form elements** for the wizard UI, with a strong preference for semantic HTML elements
 - **EMBL Visual Framework** for styling
-- **Minimal vanilla JavaScript** for PyScript glue
+- **Minimal vanilla JavaScript** for PyScript glue and simple interactive elements
 
 A gold standard application which implements this approach is the pandoc web app:
 
