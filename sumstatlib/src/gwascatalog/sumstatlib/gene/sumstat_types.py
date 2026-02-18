@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import Field, StringConstraints
+from gwascatalog.sumstatlib._pydantic import Field, StringConstraints
 
 PrimaryEffectSizeField = Literal["beta", "odds_ratio", "z_score"]
 

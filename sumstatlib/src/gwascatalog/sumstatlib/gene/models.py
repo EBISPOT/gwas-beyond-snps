@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Self, final
 
-from pydantic import PrivateAttr, model_validator
+from gwascatalog.sumstatlib._pydantic import PrivateAttr, model_validator
 
 from gwascatalog.sumstatlib.core.helpers import check_confidence_interval_structure
 from gwascatalog.sumstatlib.core.models import BaseSumstatModel

@@ -1,8 +1,11 @@
 """
-Enums, annotated types, and Pydantic models for SNP variants.
+IMPORTANT: This package is a stub/placeholder and is not intended for production use.
 
-This module defines enums and annotated types specific to SNPs, which are
-used to build Pydantic models for SNP summary statistics.
+It contains experimental code that may be incomplete or subject to change.
+
+Please do not use this library for validating SNP summary statistics. Instead use:
+
+https://github.com/ebispot/gwas-sumstats-tools
 """
 
 import warnings

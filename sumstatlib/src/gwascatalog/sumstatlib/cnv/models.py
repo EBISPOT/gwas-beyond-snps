@@ -2,7 +2,11 @@ from __future__ import annotations
 
 from typing import Any, Literal, Self, final
 
-from pydantic import PrivateAttr, computed_field, model_validator
+from gwascatalog.sumstatlib._pydantic import (
+    PrivateAttr,
+    computed_field,
+    model_validator,
+)
 
 from gwascatalog.sumstatlib.cnv.sumstat_types import (
     CNVEffectAllele,

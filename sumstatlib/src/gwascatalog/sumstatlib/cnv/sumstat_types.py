@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from pydantic import Field
+from gwascatalog.sumstatlib._pydantic import Field
 
 from gwascatalog.sumstatlib.cnv.sumstat_enums import EffectDirection, ModelType
 

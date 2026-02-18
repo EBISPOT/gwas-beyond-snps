@@ -6,7 +6,7 @@ Intentionally not comprehensive. Mostly useful for the application/CLI currently
 
 from typing import Annotated
 
-from pydantic import Field
+from gwascatalog.sumstatlib._pydantic import Field
 
 from .metadata_enums import GeneticVariationType
 

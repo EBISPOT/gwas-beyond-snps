@@ -17,12 +17,20 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Bio-Informatics"
 ]
 requires-python = ">=3.12"
-dependencies = [
+
+[project.optional-dependencies]
+pydantic = [
     "pydantic>=2.12.5",
 ]
 
 [project.urls]
 Homepage = 'https://ebi.ac.uk/gwas'
+
+[dependency-groups]
+dev = [
+  "pytest",
+  "pydantic"
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gwascatalog"]

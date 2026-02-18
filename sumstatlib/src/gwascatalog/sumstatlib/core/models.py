@@ -3,12 +3,12 @@ from __future__ import annotations
 import abc
 from typing import TYPE_CHECKING, Self
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from gwascatalog.sumstatlib._pydantic import BaseModel, ConfigDict, model_validator
 
 from gwascatalog.sumstatlib.core.sumstat_types import NegLog10pValue, PValue
 
 if TYPE_CHECKING:
-    from pydantic import ValidationInfo
+    from gwascatalog.sumstatlib._pydantic import ValidationInfo
 
 
 class BaseSumstatModel(BaseModel, abc.ABC):

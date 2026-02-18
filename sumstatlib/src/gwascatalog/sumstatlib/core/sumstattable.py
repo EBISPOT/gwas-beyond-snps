@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
-    from pydantic import BaseModel
+    from gwascatalog.sumstatlib._pydantic import BaseModel
 
 
 class SumstatTable:
