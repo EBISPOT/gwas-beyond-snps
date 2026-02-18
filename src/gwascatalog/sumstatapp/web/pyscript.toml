@@ -9,5 +9,5 @@
 
 packages = [
   "pydantic",
-  "./dist/gwascatalog_sumstatlib-0.1.0-py3-none-any.whl",
+  "./dist/gwascatalog_sumstatlib-0.1.0-py3-none-any.whl"
 ]
