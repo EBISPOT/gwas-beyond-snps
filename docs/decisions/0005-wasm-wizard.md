@@ -31,7 +31,7 @@ Build a **single-page static web application** using:
 - **PyScript (Pyodide)** to run `sumstatlib` in the browser
 - **Standard HTML5 form elements** for the wizard UI, with a strong preference for semantic HTML elements
 - **EMBL Visual Framework** for styling
-- **Vanilla JavaScript** (~300 lines) only for wizard navigation and PyScript glue
+- **Minimal vanilla JavaScript** for PyScript glue
 
 A gold standard application which implements this approach is the pandoc web app:
 
@@ -61,7 +61,7 @@ If validation fails, `ValidationErrors` will be raised by Pydantic. A sample of 
 
 ### Negative
 
-- **Slow start up time**: Download Python and associated dependencies can be slow. It's important to 1) keep dependencies minimal and 2) clearly communicate the loading state to users
+- **Slow start up time**: Downloading Python and associated dependencies can be slow. It's important to 1) keep dependencies minimal and 2) clearly communicate the loading state to users
 - **Debugging is challenging**: Debugging a Pyodide session running in Wasm can be hard. Developers in the future might hate us if the application gets more complicated.
 - **Large file limits**: very large files (>700 MB) may cause browser memory
   issues. The CLI remains the recommended tool for very large datasets or bulk data.
