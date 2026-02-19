@@ -28,12 +28,22 @@ import gzip
 import io
 import json
 import logging
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pydantic import ValidationError
 
 from gwascatalog.sumstatlib import CNVSumstatModel, GeneSumstatModel
+
+# Detect Pyodide (WebAssembly) environment for progress reporting
+try:
+    import js  # type: ignore[import-not-found]
+    from pyodide.ffi import to_js  # type: ignore[import-not-found]
+
+    _IN_PYODIDE = True
+except ImportError:
+    _IN_PYODIDE = False
 
 if TYPE_CHECKING:
     from typing import Any
@@ -43,9 +53,41 @@ logger = logging.getLogger(__name__)
 # Maximum number of errors to collect before stopping (fail fast, but show a batch)
 MAX_DISPLAY_ERRORS = 200
 
+# How often to post progress updates (in rows)
+_PROGRESS_INTERVAL = 10_000
+
 # VFS paths for temporary files (kept compressed to halve in-memory VFS usage)
 _UPLOAD_PATH = Path("/tmp/sumstat_upload")
 _OUTPUT_PATH = Path("/tmp/sumstat_validated.tsv.gz")
+
+
+# ── Progress reporting ────────────────────────────────────────────
+
+
+def _post_progress(
+    rows_processed: int,
+    valid_count: int,
+    error_count: int,
+    elapsed: float,
+) -> None:
+    """Post a progress message to the main thread (Pyodide only).
+
+    In native Python this is a no-op.  In Pyodide the message is posted
+    directly to the main thread via the Worker's ``postMessage()`` API,
+    so the browser can update the UI while validation continues.
+    """
+    if not _IN_PYODIDE:
+        return
+    rate = rows_processed / elapsed if elapsed > 0 else 0
+    msg = {
+        "type": "progress",
+        "rowsProcessed": rows_processed,
+        "validCount": valid_count,
+        "errorCount": error_count,
+        "rowsPerSecond": round(rate),
+        "elapsedSeconds": round(elapsed, 1),
+    }
+    js.postMessage(to_js(msg, dict_converter=js.Object.fromEntries))
 
 
 # ── Validation helpers ────────────────────────────────────────────
@@ -155,6 +197,8 @@ def validate_file(config_json: str) -> str:
 
         errors: list[dict[str, Any]] = []
         valid_count = 0
+        rows_processed = 0
+        start_time = time.monotonic()
 
         with _open_input(_UPLOAD_PATH) as infile, _open_output(_OUTPUT_PATH) as outfile:
             # Peek at first line to detect delimiter
@@ -166,24 +210,34 @@ def validate_file(config_json: str) -> str:
             delimiter = _detect_delimiter(first_line)
             reader = csv.DictReader(infile, delimiter=delimiter)
 
-            writer: csv.DictWriter | None = None  # type: ignore[type-arg]
+            # Use csv.writer instead of DictWriter — avoids per-row dict
+            # lookups.  Field names are discovered from the first valid
+            # row's model_dump(); subsequent rows use getattr() directly
+            # to skip the expensive model_dump() serialisation (this is
+            # a significant win in Pyodide/WASM where object allocation
+            # costs ~3-5× more than CPython).
+            writer: csv.writer | None = None  # type: ignore[type-arg]
+            fieldnames: list[str] | None = None
 
             for row_num, row in enumerate(reader, start=2):  # row 1 is header
+                rows_processed += 1
+
                 try:
                     validated = model_class.model_validate(row, context=context)
-                    row_dict = validated.model_dump()
 
                     # Lazily initialise writer with field names from first valid row
                     if writer is None:
-                        fieldnames = list(row_dict.keys())
-                        writer = csv.DictWriter(
-                            outfile,
-                            fieldnames=fieldnames,
-                            delimiter="\t",
+                        first_dump = validated.model_dump()
+                        fieldnames = list(first_dump.keys())
+                        writer = csv.writer(outfile, delimiter="\t")
+                        writer.writerow(fieldnames)
+                        writer.writerow(first_dump.values())
+                    else:
+                        # Fast path: extract values directly (no dict creation)
+                        writer.writerow(
+                            [getattr(validated, f) for f in fieldnames]
                         )
-                        writer.writeheader()
 
-                    writer.writerow(row_dict)
                     valid_count += 1
 
                 except ValidationError as exc:
@@ -212,6 +266,17 @@ def validate_file(config_json: str) -> str:
                 except Exception as exc:
                     errors.append({"row": row_num, "message": str(exc)})
 
+                # Periodic progress reporting
+                if rows_processed % _PROGRESS_INTERVAL == 0:
+                    _post_progress(
+                        rows_processed, valid_count, len(errors),
+                        time.monotonic() - start_time,
+                    )
+
+        # Final progress update
+        elapsed = time.monotonic() - start_time
+        _post_progress(rows_processed, valid_count, len(errors), elapsed)
+
         # Always delete input file to free VFS memory
         if _UPLOAD_PATH.exists():
             _UPLOAD_PATH.unlink()
@@ -220,12 +285,15 @@ def validate_file(config_json: str) -> str:
         if valid_count == 0 and _OUTPUT_PATH.exists():
             _OUTPUT_PATH.unlink()
 
+        rate = rows_processed / elapsed if elapsed > 0 else 0
         return json.dumps(
             {
                 "errorCount": len(errors),
                 "errors": errors,
                 "validRowCount": valid_count,
                 "hasOutput": valid_count > 0,
+                "elapsedSeconds": round(elapsed, 1),
+                "rowsPerSecond": round(rate),
             }
         )
 

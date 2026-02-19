@@ -31,6 +31,8 @@ const STEPS = [
   "validate",
 ];
 
+const LOADING_MESSAGE =  "Validating summary statistics in your browser. Nothing is being sent to the server."
+
 let currentStep = 0;
 let hasValidatedOutput = false; // Whether validated output exists in VFS
 
@@ -241,7 +243,7 @@ async function validateFile() {
     showLoading("Uploading file…");
     await uploadFileToVFS();
 
-    showLoading("Validating summary statistics…");
+    showLoading(LOADING_MESSAGE);
     const config = readConfig();
     const configJson = JSON.stringify(config);
 
@@ -270,17 +272,30 @@ function displayResults(result) {
   const heading = document.getElementById("result-heading");
   const summary = document.getElementById("result-summary");
 
+  // Build performance summary suffix
+  const perfParts = [];
+  if (result.elapsedSeconds != null) {
+    const s = result.elapsedSeconds;
+    const m = Math.floor(s / 60);
+    const rs = Math.round(s % 60);
+    perfParts.push(m > 0 ? `${m}m ${rs}s` : `${rs}s`);
+  }
+  if (result.rowsPerSecond != null) {
+    perfParts.push(`${result.rowsPerSecond.toLocaleString()} rows/sec`);
+  }
+  const perfSuffix = perfParts.length > 0 ? ` (${perfParts.join(", ")})` : "";
+
   if (result.errorCount === 0) {
     heading.textContent = "✅ Validation passed";
     heading.className = "result-success";
-    summary.textContent = `All ${result.validRowCount} rows are valid.`;
+    summary.textContent = `All ${result.validRowCount.toLocaleString()} rows are valid.${perfSuffix}`;
   } else {
     heading.textContent = `⚠️ ${result.errorCount} validation error(s)`;
     heading.className = "result-error";
     summary.textContent =
       result.validRowCount > 0
-        ? `${result.validRowCount} valid rows. Review the errors below.`
-        : "No valid rows found. Review the errors below.";
+        ? `${result.validRowCount.toLocaleString()} valid rows.${perfSuffix} Review the errors below.`
+        : `No valid rows found.${perfSuffix} Review the errors below.`;
   }
 
   // Build error list
@@ -342,12 +357,34 @@ async function downloadOutput() {
 
 function showLoading(message) {
   const dialog = document.getElementById("loading-dialog");
-  dialog.querySelector("p").textContent = message;
+  document.getElementById("loading-message").textContent = message;
+  document.getElementById("loading-progress").hidden = true;
   if (!dialog.open) dialog.showModal();
 }
 
 function hideLoading() {
   document.getElementById("loading-dialog").close();
+}
+
+/** Update the loading dialog with live validation progress. */
+function handleValidationProgress(msg) {
+  document.getElementById("loading-message").textContent = LOADING_MESSAGE;
+  const el = document.getElementById("loading-progress");
+  el.hidden = false;
+
+  const rows = msg.rowsProcessed.toLocaleString();
+  const rate = msg.rowsPerSecond.toLocaleString();
+  const secs = msg.elapsedSeconds;
+  const mins = Math.floor(secs / 60);
+  const remSecs = Math.round(secs % 60);
+  const timeStr =
+    mins > 0 ? `${mins}m ${String(remSecs).padStart(2, "0")}s` : `${remSecs}s`;
+
+  document.getElementById("progress-rows").textContent = rows;
+  document.getElementById("progress-rate").textContent = rate;
+  document.getElementById("progress-time").textContent = timeStr;
+  document.getElementById("progress-errors").textContent =
+    msg.errorCount.toLocaleString();
 }
 
 // ── Initialisation ───────────────────────────────────────────────
@@ -409,6 +446,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (msg.type === "ready") {
       workerReady = true;
       hideLoading();
+      return;
+    }
+    if (msg.type === "progress") {
+      handleValidationProgress(msg);
       return;
     }
     const p = _pending.get(msg.id);

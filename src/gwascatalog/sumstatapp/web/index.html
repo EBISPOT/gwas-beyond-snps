@@ -190,6 +190,25 @@
       margin: 0 auto 1rem;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Progress stats table (inside loading dialog) ─────────── */
+    .progress-stats {
+      margin: 1rem auto 0;
+      text-align: left;
+      font-size: 0.9rem;
+      border-collapse: collapse;
+    }
+    .progress-stats td {
+      padding: 0.25rem 0.75rem;
+    }
+    .progress-stats td:first-child {
+      color: #707372;
+      font-weight: 500;
+    }
+    .progress-stats td:last-child {
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+    }
   </style>
 </head>
 
@@ -601,7 +620,15 @@
   <!-- ============================================================ -->
   <dialog id="loading-dialog">
     <div class="spinner"></div>
-    <p>Loading Python environment…</p>
+    <p id="loading-message">Loading Python environment…</p>
+    <div id="loading-progress" hidden>
+      <table class="progress-stats">
+        <tr><td>Rows processed</td><td id="progress-rows">—</td></tr>
+        <tr><td>Throughput</td><td><span id="progress-rate">—</span> rows/sec</td></tr>
+        <tr><td>Elapsed</td><td id="progress-time">—</td></tr>
+        <tr><td>Errors</td><td id="progress-errors">—</td></tr>
+      </table>
+    </div>
   </dialog>
 
   <!-- ============================================================ -->
