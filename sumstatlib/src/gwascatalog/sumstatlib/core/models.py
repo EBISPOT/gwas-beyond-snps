@@ -1,9 +1,15 @@
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Self, Annotated
 
-from gwascatalog.sumstatlib._pydantic import BaseModel, ConfigDict, model_validator
+from gwascatalog.sumstatlib._pydantic import (
+    BaseModel,
+    ConfigDict,
+    model_validator,
+    Field,
+    AliasChoices,
+)
 
 from gwascatalog.sumstatlib.core.sumstat_types import NegLog10pValue, PValue
 
@@ -25,10 +31,30 @@ class BaseSumstatModel(BaseModel, abc.ABC):
         Defaults to False if not provided.
     """
 
-    model_config = ConfigDict(extra="allow")
+    model_config = ConfigDict(
+        extra="allow",
+        validate_by_name=True,
+        validate_by_alias=True,
+        serialize_by_alias=False,
+        frozen=True,
+    )
 
-    p_value: PValue | None = None
-    neg_log10_p_value: NegLog10pValue | None = None
+    p_value: Annotated[
+        PValue | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("p", "p_value", "pvalue"),
+            serialization_alias="p",
+        ),
+    ]
+    neg_log10_p_value: Annotated[
+        NegLog10pValue | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("neg_log10_p_value", "neg_log_10_p_value"),
+            serialization_alias="neg_log10_p_value",
+        ),
+    ]
 
     @abc.abstractmethod
     def validate_semantics(self) -> None:

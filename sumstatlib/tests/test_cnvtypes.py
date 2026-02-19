@@ -2,29 +2,9 @@ import pytest
 from helpers import run_type_validation_test
 
 from gwascatalog.sumstatlib.cnv.sumstat_types import (
-    CNVEffectAllele,
     EffectDirectionField,
     ModelTypeField,
 )
-
-# Test cases for CNVEffectAllele
-cnv_effect_allele_test_cases = [
-    ("CNV", None),
-    ("CN123", None),
-    ("CN=1", None),
-    ("CN3,CN8,CN10", None),
-    ("CNV123", "String should match pattern"),
-    ("CN", "String should match pattern"),
-    ("howdy", "String should match pattern"),
-    (0, "Input should be"),
-    (None, "Input should be"),
-]
-
-
-@pytest.mark.parametrize("input_data,expected_error", cnv_effect_allele_test_cases)
-def test_cnv_effect_allele(input_data, expected_error):
-    run_type_validation_test(CNVEffectAllele, input_data, expected_error)
-
 
 effect_direction_test_cases = [
     ("positive", None),

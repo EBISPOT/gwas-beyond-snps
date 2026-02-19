@@ -87,12 +87,25 @@ test_cases = [
             "hgnc_symbol": "ISG20",
             "z_score": 3,
             "p_value": 0.0001,
+            "chromosome": 1,
             "base_pair_start": 1000,
             "base_pair_end": 100,
         },
         {},
         "base_pair_end must be greater than base_pair_start",
         "bad_location",
+    ),
+    (
+        {
+            "hgnc_symbol": "ISG20",
+            "z_score": 3,
+            "p_value": 0.0001,
+            "base_pair_start": 1000,
+            "base_pair_end": 100,
+        },
+        {},
+        "Bad combination",
+        "missing_chromosome",
     ),
 ]
 

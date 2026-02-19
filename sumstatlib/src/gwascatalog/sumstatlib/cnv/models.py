@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from typing import Any, Literal, Self, final
+from typing import Any, Literal, Self, final, Annotated
 
 from gwascatalog.sumstatlib._pydantic import (
+    AliasChoices,
     PrivateAttr,
     computed_field,
     model_validator,
+    Field,
 )
 
 from gwascatalog.sumstatlib.cnv.sumstat_types import (
-    CNVEffectAllele,
     EffectDirectionField,
     ModelTypeField,
 )
@@ -21,8 +22,6 @@ from gwascatalog.sumstatlib.core.sumstat_types import (
     Chromosome,
     SampleSizePerVariant,
 )
-
-effect_allele_default: Literal["CNV"] = "CNV"
 
 
 @final
@@ -43,13 +42,50 @@ class CNVSumstatModel(BaseSumstatModel):
       - allow_zero_pvalues (bool, optional):
     """
 
-    chromosome: Chromosome
-    base_pair_start: BasePairStart
-    base_pair_end: BasePairEnd
-    effect_direction: EffectDirectionField
-    effect_allele: CNVEffectAllele = effect_allele_default
-    model_type: ModelTypeField
-    n: SampleSizePerVariant | None = None
+    chromosome: Annotated[
+        Chromosome,
+        Field(
+            validation_alias=AliasChoices("chromosome", "chrom"),
+            serialization_alias="chromosome",
+        ),
+    ]
+    base_pair_start: Annotated[
+        BasePairStart,
+        Field(
+            validation_alias=AliasChoices("base_pair_start", "start"),
+            serialization_alias="base_pair_start",
+        ),
+    ]
+    base_pair_end: Annotated[
+        BasePairEnd,
+        Field(
+            validation_alias=AliasChoices("base_pair_end", "end"),
+            serialization_alias="base_pair_end",
+        ),
+    ]
+    effect_direction: Annotated[
+        EffectDirectionField,
+        Field(
+            validation_alias=AliasChoices("effect_direction"),
+            serialization_alias="effect_direction",
+        ),
+    ]
+    model_type: Annotated[
+        ModelTypeField,
+        Field(
+            validation_alias=AliasChoices("model_type", "model"),
+            serialization_alias="model_type",
+        ),
+    ]
+    n: Annotated[
+        SampleSizePerVariant | None,
+        Field(
+            default=None, validation_alias=AliasChoices("n"), serialization_alias="n"
+        ),
+    ]
+
+    # TODO: conditional measure of effect size
+    # TODO: an effect size must be declared
 
     # private attributes to avoid polluting the data model
     # adopting this pattern because metadata are provided by a payload or CLI flag at

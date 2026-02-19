@@ -6,23 +6,6 @@ from gwascatalog.sumstatlib._pydantic import Field
 
 from gwascatalog.sumstatlib.cnv.sumstat_enums import EffectDirection, ModelType
 
-cnv_regex = r"^(CNV|CN=?\d+)(,(CNV|CN=?\d+))*$"
-
-CNVEffectAllele = Annotated[
-    str,
-    Field(
-        description="""
-        The symbolic allele associated with the effect, optionally representing the
-        copy number.
-
-        See how CNVs are represented at:
-
-        https://www.ensembl.org/info/docs/tools/vep/vep_formats.html#sv
-        """,
-        pattern=cnv_regex,
-        examples=["CNV", "CN=5", "CN2", "CN=0,CN=2,CN=4"],
-    ),
-]
 
 EffectDirectionField = Annotated[
     EffectDirection,

@@ -1,8 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Self, final
+from typing import TYPE_CHECKING, Self, final, Annotated
 
-from gwascatalog.sumstatlib._pydantic import PrivateAttr, model_validator
+from gwascatalog.sumstatlib._pydantic import (
+    PrivateAttr,
+    model_validator,
+    Field,
+    AliasChoices,
+)
 
 from gwascatalog.sumstatlib.core.helpers import check_confidence_interval_structure
 from gwascatalog.sumstatlib.core.models import BaseSumstatModel
@@ -46,27 +51,107 @@ class GeneSumstatModel(BaseSumstatModel):
     """
 
     # at least one type of gene name is mandatory
-    ensembl_gene_id: EnsemblGeneID | None = None
-    hgnc_symbol: HGNCGeneSymbol | None = None
+    ensembl_gene_id: Annotated[
+        EnsemblGeneID | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("ensembl_gene_id", "ensg"),
+            serialization_alias="ensembl_gene_id",
+        ),
+    ]
+    hgnc_symbol: Annotated[
+        HGNCGeneSymbol | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("hgnc_symbol", "hgnc"),
+            serialization_alias="hgnc_symbol",
+        ),
+    ]
 
     # optional coordinates for the field
-    chromosome: Chromosome | None = None
-    base_pair_start: BasePairStart | None = None
-    base_pair_end: BasePairEnd | None = None
+    chromosome: Annotated[
+        Chromosome | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("chromosome", "chrom"),
+            serialization_alias="chromosome",
+        ),
+    ]
+    base_pair_start: Annotated[
+        BasePairStart | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("base_pair_start", "start"),
+            serialization_alias="base_pair_start",
+        ),
+    ]
+    base_pair_end: Annotated[
+        BasePairEnd | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("base_pair_end", "end"),
+            serialization_alias="base_pair_end",
+        ),
+    ]
 
     # validation context: set primary effect size
-    z_score: ZScore | None = None
-    odds_ratio: OddsRatio | None = None
-    beta: Beta | None = None
-    standard_error: StandardError | None = None
+    z_score: Annotated[
+        ZScore | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("z_score", "zscore", "z"),
+            serialization_alias="z_score",
+        ),
+    ]
+    odds_ratio: Annotated[
+        OddsRatio | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("odds_ratio", "OR"),
+            serialization_alias="odds_ratio",
+        ),
+    ]
+    beta: Annotated[
+        Beta | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("beta", "b"),
+            serialization_alias="beta",
+        ),
+    ]
+    standard_error: Annotated[
+        StandardError | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("standard_error", "se"),
+            serialization_alias="standard_error",
+        ),
+    ]
 
-    # encouraged
-    confidence_interval_lower: ConfidenceIntervalLower | None = (
-        None  # ci for odds ratio
-    )
-    confidence_interval_upper: ConfidenceIntervalUpper | None = None
+    confidence_interval_lower: Annotated[
+        ConfidenceIntervalLower | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("confidence_interval_lower", "ci_lower"),
+            serialization_alias="ci_lower",
+        ),
+    ]
 
-    n: SampleSizePerVariant | None = None
+    confidence_interval_upper: Annotated[
+        ConfidenceIntervalUpper | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("confidence_interval_upper", "ci_upper"),
+            serialization_alias="ci_upper",
+        ),
+    ]
+
+    n: Annotated[
+        SampleSizePerVariant | None,
+        Field(
+            default=None, validation_alias=AliasChoices("n"), serialization_alias="n"
+        ),
+    ]
 
     def validate_semantics(self):
         raise NotImplementedError
@@ -76,13 +161,14 @@ class GeneSumstatModel(BaseSumstatModel):
     # runtime, so adding a field doesn't make sense
     _primary_effect_size: PrimaryEffectSizeField = PrivateAttr()
 
-    def model_post_init(self, context: Any) -> None:
-        if "primary_effect_size" not in context:
-            raise ValueError(
-                "primary effect size field must be provided via validation context"
-            )
-
-        self._primary_effect_size = context["primary_effect_size"]
+    # TODO: set up primary effect size
+    # def model_post_init(self, context: Any) -> None:
+    #     if "primary_effect_size" not in context:
+    #         raise ValueError(
+    #             "primary effect size field must be provided via validation context"
+    #         )
+    #
+    #     self._primary_effect_size = context["primary_effect_size"]
 
     @model_validator(mode="after")
     def validate_location(self) -> Self:
