@@ -38,7 +38,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
-# from gwascatalog.sumstatlib import CNVSumstatModel, GeneSumstatModel
+from gwascatalog.sumstatlib import CNVSumstatModel, GeneSumstatModel
 
 logger = logging.getLogger(__name__)
 
@@ -128,18 +128,9 @@ def validate_file(file_text: str, config_json: str) -> str:
         valid_rows: list[dict[str, Any]] = []
 
         for row_num, row in enumerate(reader, start=2):  # row 1 is header
-            # Strip whitespace; convert empty strings to None
-            cleaned = {k: v.strip() if v else None for k, v in row.items()}
-            if all(not v for v in cleaned.values()):
-                continue
-
-            for key, val in cleaned.items():
-                if val == "":
-                    cleaned[key] = None
-
             try:
-                model_class.model_validate(cleaned, context=context)
-                valid_rows.append(cleaned)
+                validated_row = model_class.model_validate(row, context=context).model_dump()
+                valid_rows.append(validated_row)
             except ValidationError as exc:
                 for err in exc.errors():
                     loc = " → ".join(str(part) for part in err.get("loc", []))
