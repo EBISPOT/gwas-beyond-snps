@@ -12,10 +12,10 @@
  * Responsibilities:
  *   1. Wizard step navigation (show/hide sections via hidden attribute)
  *   2. Form state management (enable/disable Next based on input)
- *   3. Chunked file upload to Emscripten VFS
+ *   3. Streaming file upload to Emscripten VFS (via FS API, no Python bridge)
  *   4. Bridge to Python validate_file(config_json) — file lives in VFS
  *   5. Display structured validation results returned by Python
- *   6. Chunked download of validated output from VFS
+ *   6. Download of validated output from VFS (via FS API, no Python bridge)
  */
 
 "use strict";
@@ -33,7 +33,22 @@ const STEPS = [
 
 let currentStep = 0;
 let hasValidatedOutput = false; // Whether validated output exists in VFS
-const CHUNK_SIZE = 4 * 1024 * 1024; // 4 MB — chunk size for VFS file I/O
+
+// ── Web Worker (Pyodide runs off the main thread) ────────────────
+
+let worker = null;
+let workerReady = false;
+let _nextId = 0;
+const _pending = new Map();
+
+/** Send a message to the validation worker and return a promise for the result. */
+function callWorker(type, payload = {}, transfer = []) {
+  return new Promise((resolve, reject) => {
+    const id = ++_nextId;
+    _pending.set(id, { resolve, reject });
+    worker.postMessage({ type, id, ...payload }, transfer);
+  });
+}
 
 // ── Wizard navigation ────────────────────────────────────────────
 
@@ -152,30 +167,19 @@ function handleFileChange(input) {
 }
 
 /**
- * Upload a file to the Emscripten virtual file system in chunks.
+ * Upload a file to the Emscripten virtual file system via a Web Worker.
  *
- * Streams the raw file bytes (including any gzip framing) directly
- * to the VFS without decompression.  Keeping compressed data in the
- * in-memory VFS roughly halves its footprint.  Python will
- * transparently decompress when it reads the file.
+ * Reads the file into an ArrayBuffer on the main thread, then transfers
+ * ownership to the worker (zero-copy via Transferable).  The worker
+ * writes the bytes to the VFS in one FS.writeFile() call — off the
+ * main thread, so the UI never freezes.
  */
 async function uploadFileToVFS() {
   const file = document.getElementById("file-input").files[0];
   if (!file) throw new Error("No file selected");
 
-  await globalThis.start_upload(file.name);
-
-  const reader = file.stream().getReader();
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      await globalThis.write_chunk(value);
-    }
-  } finally {
-    reader.releaseLock();
-    await globalThis.finish_upload();
-  }
+  const buffer = await file.arrayBuffer();
+  await callWorker("upload", { data: buffer }, [buffer]);
 }
 
 function formatFileSize(bytes) {
@@ -228,8 +232,7 @@ async function validateFile() {
   btn.textContent = "Validating…";
 
   try {
-    const pyValidate = globalThis.validate_file;
-    if (!pyValidate) {
+    if (!workerReady) {
       throw new Error(
         "Python environment not ready. Please wait for it to finish loading."
       );
@@ -242,7 +245,7 @@ async function validateFile() {
     const config = readConfig();
     const configJson = JSON.stringify(config);
 
-    const resultJson = await pyValidate(configJson);
+    const resultJson = await callWorker("validate", { configJson });
     const result = JSON.parse(resultJson);
     displayResults(result);
   } catch (err) {
@@ -303,36 +306,22 @@ function displayResults(result) {
   document.getElementById("btn-download").hidden = !result.hasOutput;
 }
 
-// ── Download (chunked read from Emscripten VFS) ─────────────────
+// ── Download (via Web Worker) ────────────────────────────────────
 
 async function downloadOutput() {
   if (!hasValidatedOutput) return;
 
-  showLoading("Preparing download...");
+  showLoading("Preparing download…");
 
   try {
-    const totalSize = await globalThis.get_output_size();
-    if (totalSize === 0) return;
-
-    const chunks = [];
-    let offset = 0;
-
-    while (offset < totalSize) {
-      const proxy = await globalThis.read_output_chunk(offset, CHUNK_SIZE);
-      // Defensive copy: toJs() may return a view into Wasm linear memory
-      // that becomes invalid after proxy.destroy()
-      const chunk = new Uint8Array(proxy.toJs());
-      proxy.destroy();
-      chunks.push(chunk);
-      offset += chunk.byteLength;
-    }
+    const buffer = await callWorker("download");
 
     const rawName =
       document.getElementById("file-input").files[0]?.name || "output.tsv";
     const baseName = rawName.replace(/\.gz$/, "");
     const fileName = "validated_" + baseName + ".gz";
 
-    const blob = new Blob(chunks, { type: "application/gzip" });
+    const blob = new Blob([new Uint8Array(buffer)], { type: "application/gzip" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -342,7 +331,7 @@ async function downloadOutput() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    await globalThis.cleanup();
+    await callWorker("cleanup");
     hasValidatedOutput = false;
   } finally {
     hideLoading();
@@ -403,7 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
     .addEventListener("click", downloadOutput);
   document.getElementById("btn-reset").addEventListener("click", async () => {
     document.getElementById("wizard").reset();
-    if (hasValidatedOutput && globalThis.cleanup) await globalThis.cleanup();
+    if (hasValidatedOutput) await callWorker("cleanup");
     hasValidatedOutput = false;
     document.getElementById("validation-output").hidden = true;
     document.getElementById("file-info").hidden = true;
@@ -412,6 +401,22 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll("[id^='next-']").forEach((b) => (b.disabled = true));
     goToStep(0);
   });
+
+  // Start Web Worker (Pyodide loads off the main thread)
+  worker = new Worker("validation-worker.js");
+  showLoading("Loading Python environment…");
+  worker.onmessage = ({ data: msg }) => {
+    if (msg.type === "ready") {
+      workerReady = true;
+      hideLoading();
+      return;
+    }
+    const p = _pending.get(msg.id);
+    if (!p) return;
+    _pending.delete(msg.id);
+    if (msg.type === "done") p.resolve(msg.result);
+    if (msg.type === "error") p.reject(new Error(msg.error));
+  };
 
   // Show initial step
   goToStep(0);

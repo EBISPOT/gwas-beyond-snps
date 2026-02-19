@@ -1,38 +1,23 @@
 """
-validate.py — PyScript entry point for browser-based validation.
+validate.py — Python validation module for GWAS summary statistics.
 
-Runs inside Pyodide (Python compiled to WebAssembly).  Uses the Emscripten
-virtual file system (VFS) for file I/O to minimise memory usage:
+Runs inside Pyodide (Python compiled to WebAssembly) in a Web Worker.
+Loaded by ``validation-worker.js`` via ``pyodide.runPython()``.
 
-  1. JavaScript writes uploaded data to VFS in chunks via start_upload /
-     write_chunk / finish_upload.
-  2. validate_file() reads the VFS file row-by-row, validates each row,
-     and streams valid rows to a new VFS file.
-  3. JavaScript reads the validated file from VFS in chunks for download
-     via get_output_size / read_output_chunk.
+The worker handles file I/O to the Emscripten VFS; this module only
+needs to read/write files using standard ``pathlib``/``gzip`` APIs.
 
-This design avoids holding the entire file in memory at once, keeping Wasm
-heap usage well within the 4 GB limit even for ~1 GB input files.
+Data flow:
 
-Interface (all functions exposed on ``globalThis``):
+  1. Worker writes uploaded bytes to VFS at ``_UPLOAD_PATH``.
+  2. ``validate_file()`` reads that file row-by-row, validates each row,
+     and streams valid rows to ``_OUTPUT_PATH`` (gzip-compressed).
+  3. Worker reads ``_OUTPUT_PATH`` and transfers it back to the main
+     thread for download.
 
-  Chunked upload
-    start_upload(filename)     → bool
-    write_chunk(chunk)         → bool   (chunk is a JS Uint8Array)
-    finish_upload()            → bool
+Interface:
 
-  Validation
-    validate_file(config_json) → JSON string   (errors only, no file content)
-
-  Chunked download
-    get_output_size()                → int
-    read_output_chunk(offset, size)  → bytes  (call .toJs() on JS side)
-
-  Cleanup
-    cleanup()                  → bool
-
-No direct DOM manipulation — all results are returned as structured data
-for the JavaScript layer to display.
+  validate_file(config_json) → JSON string  (errors + counts, no file data)
 """
 
 from __future__ import annotations
@@ -51,7 +36,7 @@ from pydantic import ValidationError
 from gwascatalog.sumstatlib import CNVSumstatModel, GeneSumstatModel
 
 if TYPE_CHECKING:
-    from typing import Any, BinaryIO
+    from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -61,89 +46,6 @@ MAX_DISPLAY_ERRORS = 200
 # VFS paths for temporary files (kept compressed to halve in-memory VFS usage)
 _UPLOAD_PATH = Path("/tmp/sumstat_upload")
 _OUTPUT_PATH = Path("/tmp/sumstat_validated.tsv.gz")
-
-# Module-level state for chunked upload
-_upload_fd: BinaryIO | None = None
-
-
-# ── Chunked upload to VFS ─────────────────────────────────────────
-
-
-def start_upload(filename: str) -> bool:
-    """Begin a chunked file upload to the VFS.
-
-    Opens a file for binary writing.  Subsequent ``write_chunk()`` calls
-    append data.  Call ``finish_upload()`` when done.
-    """
-    global _upload_fd  # noqa: PLW0603
-
-    # Clean up any previous session
-    if _upload_fd is not None:
-        _upload_fd.close()
-    for path in (_UPLOAD_PATH, _OUTPUT_PATH):
-        if path.exists():
-            path.unlink()
-
-    _upload_fd = _UPLOAD_PATH.open("wb")
-    return True
-
-
-def write_chunk(chunk: Any) -> bool:
-    """Write a chunk of bytes to the upload file.
-
-    Args:
-        chunk: A JS ``Uint8Array`` (received as a Pyodide ``JsProxy``).
-    """
-    if _upload_fd is None:
-        raise RuntimeError("No upload in progress — call start_upload() first")
-    _upload_fd.write(chunk.to_py())
-    return True
-
-
-def finish_upload() -> bool:
-    """Finalise the upload by closing the file."""
-    global _upload_fd  # noqa: PLW0603
-    if _upload_fd is not None:
-        _upload_fd.close()
-        _upload_fd = None
-    return True
-
-
-# ── Chunked download from VFS ─────────────────────────────────────
-
-
-def get_output_size() -> int:
-    """Return the byte size of the validated output file."""
-    if not _OUTPUT_PATH.exists():
-        return 0
-    return _OUTPUT_PATH.stat().st_size
-
-
-def read_output_chunk(offset: int, size: int) -> bytes:
-    """Read a chunk of bytes from the validated output file.
-
-    Args:
-        offset: Byte offset to start reading from.
-        size: Maximum number of bytes to read.
-
-    Returns:
-        ``bytes`` — the chunk data (returned as a ``PyProxy``; call
-        ``.toJs()`` on the JS side to get a ``Uint8Array``).
-    """
-    with _OUTPUT_PATH.open("rb") as f:
-        f.seek(offset)
-        return f.read(size)
-
-
-# ── Cleanup ───────────────────────────────────────────────────────
-
-
-def cleanup() -> bool:
-    """Remove temporary files from the VFS."""
-    for path in (_UPLOAD_PATH, _OUTPUT_PATH):
-        if path.exists():
-            path.unlink()
-    return True
 
 
 # ── Validation helpers ────────────────────────────────────────────
@@ -342,15 +244,5 @@ def validate_file(config_json: str) -> str:
         )
 
 
-# ── Expose to JavaScript via globalThis ──────────────────────────
-from js import globalThis  # type: ignore[import-untyped]  # noqa: E402
-
-globalThis.start_upload = start_upload
-globalThis.write_chunk = write_chunk
-globalThis.finish_upload = finish_upload
-globalThis.validate_file = validate_file
-globalThis.get_output_size = get_output_size
-globalThis.read_output_chunk = read_output_chunk
-globalThis.cleanup = cleanup
-
-print("✅ Python environment loaded — sumstatlib ready")
+# ── Module loaded ─────────────────────────────────────────────────
+print("✅ Python validation module loaded")
