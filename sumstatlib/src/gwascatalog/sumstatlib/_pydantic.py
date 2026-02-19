@@ -14,6 +14,7 @@ Making pydantic optional means that consumers of the library can provide pydanti
 
 try:
     from pydantic import (
+        AliasChoices,
         BaseModel,
         BeforeValidator,
         ConfigDict,
@@ -36,6 +37,7 @@ else:
         raise ImportError("Pydantic v2 required")
 
 __all__ = [
+    "AliasChoices",
     "BaseModel",
     "BeforeValidator",
     "ConfigDict",
