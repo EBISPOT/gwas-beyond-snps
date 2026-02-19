@@ -12,9 +12,10 @@
  * Responsibilities:
  *   1. Wizard step navigation (show/hide sections via hidden attribute)
  *   2. Form state management (enable/disable Next based on input)
- *   3. File reading and optional gzip decompression
- *   4. Bridge to Python validate_file(file_text, config_json)
+ *   3. Chunked file upload to Emscripten VFS
+ *   4. Bridge to Python validate_file(config_json) — file lives in VFS
  *   5. Display structured validation results returned by Python
+ *   6. Chunked download of validated output from VFS
  */
 
 "use strict";
@@ -31,7 +32,8 @@ const STEPS = [
 ];
 
 let currentStep = 0;
-let validatedOutput = null; // TSV content for download
+let hasValidatedOutput = false; // Whether validated output exists in VFS
+const CHUNK_SIZE = 4 * 1024 * 1024; // 4 MB — chunk size for VFS file I/O
 
 // ── Wizard navigation ────────────────────────────────────────────
 
@@ -137,7 +139,7 @@ function handleZeroPvaluesChange() {
   document.getElementById("next-significance").disabled = false;
 }
 
-// ── File handling (standard file input — not File System Access) ──
+// ── File handling ────────────────────────────────────────────────
 
 function handleFileChange(input) {
   const file = input.files[0];
@@ -149,18 +151,31 @@ function handleFileChange(input) {
   document.getElementById("next-file").disabled = false;
 }
 
-async function readUploadedFile() {
+/**
+ * Upload a file to the Emscripten virtual file system in chunks.
+ *
+ * Streams the raw file bytes (including any gzip framing) directly
+ * to the VFS without decompression.  Keeping compressed data in the
+ * in-memory VFS roughly halves its footprint.  Python will
+ * transparently decompress when it reads the file.
+ */
+async function uploadFileToVFS() {
   const file = document.getElementById("file-input").files[0];
   if (!file) throw new Error("No file selected");
 
-  if (file.name.endsWith(".gz")) {
-    const buffer = await file.arrayBuffer();
-    const stream = new Blob([buffer])
-      .stream()
-      .pipeThrough(new DecompressionStream("gzip"));
-    return new Response(stream).text();
+  await globalThis.start_upload(file.name);
+
+  const reader = file.stream().getReader();
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      await globalThis.write_chunk(value);
+    }
+  } finally {
+    reader.releaseLock();
+    await globalThis.finish_upload();
   }
-  return file.text();
 }
 
 function formatFileSize(bytes) {
@@ -211,13 +226,8 @@ async function validateFile() {
   const btn = document.getElementById("btn-validate");
   btn.disabled = true;
   btn.textContent = "Validating…";
-  showLoading("Validating summary statistics…");
 
   try {
-    const config = readConfig();
-    const fileText = await readUploadedFile();
-    const configJson = JSON.stringify(config);
-
     const pyValidate = globalThis.validate_file;
     if (!pyValidate) {
       throw new Error(
@@ -225,7 +235,14 @@ async function validateFile() {
       );
     }
 
-    const resultJson = await pyValidate(fileText, configJson);
+    showLoading("Uploading file…");
+    await uploadFileToVFS();
+
+    showLoading("Validating summary statistics…");
+    const config = readConfig();
+    const configJson = JSON.stringify(config);
+
+    const resultJson = await pyValidate(configJson);
     const result = JSON.parse(resultJson);
     displayResults(result);
   } catch (err) {
@@ -234,7 +251,7 @@ async function validateFile() {
       errorCount: 1,
       errors: [{ row: 0, message: err.message || String(err) }],
       validRowCount: 0,
-      output: null,
+      hasOutput: false,
     });
   } finally {
     hideLoading();
@@ -282,30 +299,54 @@ function displayResults(result) {
   }
 
   // Download button
-  validatedOutput = result.output;
-  document.getElementById("btn-download").hidden = !result.output;
+  hasValidatedOutput = result.hasOutput;
+  document.getElementById("btn-download").hidden = !result.hasOutput;
 }
 
-// ── Download (standard file download — not File System Access) ───
+// ── Download (chunked read from Emscripten VFS) ─────────────────
 
-function downloadOutput() {
-  if (!validatedOutput) return;
+async function downloadOutput() {
+  if (!hasValidatedOutput) return;
 
-  const fileName =
-    "validated_" +
-    (document.getElementById("file-input").files[0]?.name || "output.tsv");
+  showLoading("Preparing download...");
 
-  const blob = new Blob([validatedOutput], {
-    type: "text/tab-separated-values",
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = fileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  try {
+    const totalSize = await globalThis.get_output_size();
+    if (totalSize === 0) return;
+
+    const chunks = [];
+    let offset = 0;
+
+    while (offset < totalSize) {
+      const proxy = await globalThis.read_output_chunk(offset, CHUNK_SIZE);
+      // Defensive copy: toJs() may return a view into Wasm linear memory
+      // that becomes invalid after proxy.destroy()
+      const chunk = new Uint8Array(proxy.toJs());
+      proxy.destroy();
+      chunks.push(chunk);
+      offset += chunk.byteLength;
+    }
+
+    const rawName =
+      document.getElementById("file-input").files[0]?.name || "output.tsv";
+    const baseName = rawName.replace(/\.gz$/, "");
+    const fileName = "validated_" + baseName + ".gz";
+
+    const blob = new Blob(chunks, { type: "application/gzip" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    await globalThis.cleanup();
+    hasValidatedOutput = false;
+  } finally {
+    hideLoading();
+  }
 }
 
 // ── Loading dialog ───────────────────────────────────────────────
@@ -313,7 +354,7 @@ function downloadOutput() {
 function showLoading(message) {
   const dialog = document.getElementById("loading-dialog");
   dialog.querySelector("p").textContent = message;
-  dialog.showModal();
+  if (!dialog.open) dialog.showModal();
 }
 
 function hideLoading() {
@@ -360,9 +401,10 @@ document.addEventListener("DOMContentLoaded", () => {
   document
     .getElementById("btn-download")
     .addEventListener("click", downloadOutput);
-  document.getElementById("btn-reset").addEventListener("click", () => {
+  document.getElementById("btn-reset").addEventListener("click", async () => {
     document.getElementById("wizard").reset();
-    validatedOutput = null;
+    if (hasValidatedOutput && globalThis.cleanup) await globalThis.cleanup();
+    hasValidatedOutput = false;
     document.getElementById("validation-output").hidden = true;
     document.getElementById("file-info").hidden = true;
     document.getElementById("assembly-group").hidden = true;
