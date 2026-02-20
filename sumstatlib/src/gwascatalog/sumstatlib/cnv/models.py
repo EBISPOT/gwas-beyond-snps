@@ -1,26 +1,26 @@
 from __future__ import annotations
 
-from typing import Any, Literal, Self, final, Annotated
+from typing import Annotated, Any, ClassVar, Self, final
 
 from gwascatalog.sumstatlib._pydantic import (
     AliasChoices,
+    Field,
     PrivateAttr,
     computed_field,
     model_validator,
-    Field,
 )
-
 from gwascatalog.sumstatlib.cnv.sumstat_types import (
     EffectDirectionField,
     ModelTypeField,
 )
+from gwascatalog.sumstatlib.constants import CNV_FIELD_INDEX_MAP, MIN_CNV_RECORDS
 from gwascatalog.sumstatlib.core.models import BaseSumstatModel
 from gwascatalog.sumstatlib.core.sumstat_enums import GenomeAssembly
 from gwascatalog.sumstatlib.core.sumstat_types import (
     BasePairEnd,
     BasePairStart,
     Chromosome,
-    SampleSizePerVariant,
+    PrimaryEffectSizeField,
 )
 
 
@@ -41,6 +41,8 @@ class CNVSumstatModel(BaseSumstatModel):
       - assembly (GenomeAssembly, mandatory)
       - allow_zero_pvalues (bool, optional):
     """
+
+    MIN_RECORDS: ClassVar[int] = MIN_CNV_RECORDS
 
     chromosome: Annotated[
         Chromosome,
@@ -77,26 +79,37 @@ class CNVSumstatModel(BaseSumstatModel):
             serialization_alias="model_type",
         ),
     ]
-    n: Annotated[
-        SampleSizePerVariant | None,
-        Field(
-            default=None, validation_alias=AliasChoices("n"), serialization_alias="n"
-        ),
-    ]
-
-    # TODO: conditional measure of effect size
-    # TODO: an effect size must be declared
 
     # private attributes to avoid polluting the data model
     # adopting this pattern because metadata are provided by a payload or CLI flag at
     # runtime, so adding a field doesn't make sense
     _assembly: GenomeAssembly = PrivateAttr()
+    _primary_effect_size: PrimaryEffectSizeField = PrivateAttr()
 
     def model_post_init(self, context: Any) -> None:
         if "assembly" not in context:
             raise ValueError("genome assembly must be provided via validation context")
 
         self._assembly = GenomeAssembly(context["assembly"])
+
+        if "primary_effect_size" not in context:
+            raise ValueError(
+                "primary effect size field must be provided via validation context"
+            )
+        self._primary_effect_size = context["primary_effect_size"]
+
+    def output_field_order(self) -> list[str]:
+        order: list[str] = []
+
+        for field, index in CNV_FIELD_INDEX_MAP.items():
+            if getattr(self, field) is not None:
+                order.insert(index, field)
+
+        # Extra fields (extra="allow") — stable order from __pydantic_extra__
+        extra = self.__pydantic_extra__ or {}
+
+        order.extend(extra.keys())
+        return order
 
     def validate_semantics(self) -> None:
         # validate start location is smaller than chromosome size?
@@ -125,3 +138,14 @@ class CNVSumstatModel(BaseSumstatModel):
             f"{self.base_pair_end}:"
             f"{self._assembly}"
         )
+
+    @model_validator(mode="after")
+    def check_effect_size_fields(self) -> Self:
+        """Only one effect size value can be provided."""
+        match (self.z_score, self.odds_ratio, self.beta):
+            case (float(), None, None) | (None, float(), None) | (None, None, float()):
+                return self
+            case None, None, None:
+                raise ValueError("Provide one effect size value")
+            case _:
+                raise ValueError("Provide only one value: z_score, odds_ratio, beta")

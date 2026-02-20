@@ -1,17 +1,27 @@
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Self, Annotated
+from typing import TYPE_CHECKING, Annotated, Literal, Self
 
 from gwascatalog.sumstatlib._pydantic import (
+    AliasChoices,
     BaseModel,
     ConfigDict,
-    model_validator,
     Field,
-    AliasChoices,
+    model_validator,
 )
-
-from gwascatalog.sumstatlib.core.sumstat_types import NegLog10pValue, PValue
+from gwascatalog.sumstatlib.core.sumstat_types import (
+    Beta,
+    ConfidenceIntervalLower,
+    ConfidenceIntervalUpper,
+    HazardRatio,
+    NegLog10pValue,
+    OddsRatio,
+    PValue,
+    SampleSizePerVariant,
+    StandardError,
+    ZScore,
+)
 
 if TYPE_CHECKING:
     from gwascatalog.sumstatlib._pydantic import ValidationInfo
@@ -56,6 +66,119 @@ class BaseSumstatModel(BaseModel, abc.ABC):
         ),
     ]
 
+    # conditional fields which depend on each other
+    z_score: Annotated[
+        ZScore | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("z_score", "zscore", "z"),
+            serialization_alias="z_score",
+        ),
+    ]
+    odds_ratio: Annotated[
+        OddsRatio | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("odds_ratio", "OR"),
+            serialization_alias="odds_ratio",
+        ),
+    ]
+    beta: Annotated[
+        Beta | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("beta", "b"),
+            serialization_alias="beta",
+        ),
+    ]
+    hazard_ratio: Annotated[
+        HazardRatio | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("hazard_ratio", "hr"),
+            serialization_alias="hazard_ratio",
+        ),
+    ]
+    standard_error: Annotated[
+        StandardError | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("standard_error", "se"),
+            serialization_alias="standard_error",
+        ),
+    ]
+
+    confidence_interval_lower: Annotated[
+        ConfidenceIntervalLower | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("confidence_interval_lower", "ci_lower"),
+            serialization_alias="confidence_interval_lower",
+        ),
+    ]
+
+    confidence_interval_upper: Annotated[
+        ConfidenceIntervalUpper | None,
+        Field(
+            default=None,
+            validation_alias=AliasChoices("confidence_interval_upper", "ci_upper"),
+            serialization_alias="confidence_interval_upper",
+        ),
+    ]
+
+    # optional fields
+    n: Annotated[
+        SampleSizePerVariant | None,
+        Field(
+            default=None, validation_alias=AliasChoices("n"), serialization_alias="n"
+        ),
+    ]
+
+    @property
+    def effect_size_values(self) -> list[float | None]:
+        return [
+            self.beta,
+            self.odds_ratio,
+            self.z_score,
+            self.hazard_ratio,
+        ]
+
+    @property
+    def p_value_type(self) -> Literal["p_value", "neg_log10_p_value"]:
+        """Returns the type of the p-value attribute"""
+        if self.p_value is not None:
+            return "p_value"
+        if self.neg_log10_p_value is not None:
+            return "neg_log10_p_value"
+        raise TypeError("Not p_value or neg_log10_p_value is very odd")
+
+    @property
+    def effect_size_type(
+        self,
+    ) -> Literal["beta", "odds_ratio", "z_score", "hazard_ratio"] | None:
+        """Returns the type of the effect size attribute"""
+        match (self.beta, self.odds_ratio, self.z_score, self.hazard_ratio):
+            case None, None, None, None:
+                return None
+            case float(), None, None, None:
+                return "beta"
+            case None, float(), None, None:
+                return "odds_ratio"
+            case None, None, float(), None:
+                return "z_score"
+            case None, None, None, float():
+                return "hazard_ratio"
+
+    @abc.abstractmethod
+    def output_field_order(self) -> list[str]:
+        """Return serialization alias names in the desired output column order.
+
+        Called on a validated instance to determine output column ordering.
+        Only fields that are present (non-None) or mandatory should appear.
+        Extra fields (model_config extra='allow') are appended at the end.
+        """
+        raise NotImplementedError
+
     @abc.abstractmethod
     def validate_semantics(self) -> None:
         """Does this data make sense in the context of the domain and the real world?
@@ -79,8 +202,9 @@ class BaseSumstatModel(BaseModel, abc.ABC):
         # Subclasses must define this method, but it may do nothing (return None is OK)
         raise NotImplementedError
 
+    # pydantic model validation functions below
     @model_validator(mode="after")
-    def validate_pvalues(self, info: ValidationInfo) -> Self:
+    def check_p_values(self, info: ValidationInfo) -> Self:
         """
         Check that p-values are structurally OK and any zero values are valid
         """
@@ -109,9 +233,49 @@ class BaseSumstatModel(BaseModel, abc.ABC):
                     f"Invalid p-values: {self.p_value=}, {self.neg_log10_p_value=}"
                 )
 
-    @property
-    def is_neg_log_10_p_value(self) -> bool:
-        """
-        True if the model stores a negative log10 p-value instead of a raw p-value.
-        """
-        return self.neg_log10_p_value is not None
+    @model_validator(mode="after")
+    def check_effect_size(self):
+        """Check that no effect sizes are set or only one effect size is set"""
+        count = sum(v is not None for v in self.effect_size_values)
+
+        if count > 1:
+            raise ValueError(
+                "At most one of beta, odds_ratio, z_score, hazard_ratio may be set"
+            )
+
+        return self
+
+    @model_validator(mode="after")
+    def check_confidence_interval(self) -> Self:
+        lower = self.confidence_interval_lower
+        upper = self.confidence_interval_upper
+
+        # No CI provided
+        if lower is None and upper is None:
+            return self
+
+        # Partial CI provided
+        if lower is None or upper is None:
+            raise ValueError(
+                "confidence_interval_lower and confidence_interval_upper must be provided together"
+            )
+
+        # note: assumes only one effect size has already been validated
+        effect_size: float | None = next(
+            (item for item in self.effect_size_values if item is not None), None
+        )
+
+        if effect_size is None:
+            raise ValueError("Confidence interval provided but no effect size present")
+
+        # Bound ordering
+        if lower > upper:
+            raise ValueError(
+                "confidence_interval_lower must be <= confidence_interval_upper"
+            )
+
+        # Containment
+        if not (lower <= effect_size <= upper):
+            raise ValueError("Effect size must lie within the confidence interval")
+
+        return self

@@ -1,14 +1,12 @@
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Literal
 
 from gwascatalog.sumstatlib._pydantic import (
     BeforeValidator,
     Field,
     PositiveInt,
-    AliasChoices,
 )
-
 from gwascatalog.sumstatlib.core.helpers import chromosome_to_integer
 
 Chromosome = Annotated[
@@ -95,5 +93,12 @@ BasePairEnd = Annotated[
     Field(
         description="The end position of the CNV, using the coordinate system declared",
         ge=0,
+    ),
+]
+PrimaryEffectSizeField = Literal["beta", "odds_ratio", "z_score"]
+ZScore = Annotated[
+    float,
+    Field(
+        description="Standarised effect size estimate of association",
     ),
 ]

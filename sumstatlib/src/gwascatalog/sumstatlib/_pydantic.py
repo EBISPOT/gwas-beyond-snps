@@ -1,15 +1,17 @@
-"""This is a shim for pydantic. All pydantic imports in the library should be made from here.
+"""Pydantic shim to simplify portable deployments.
 
-This shim exists because the library is distributed with pydantic optional at installation time but
-required at runtime.
+Always import pydantic from this shim. This shim exists because the library is
+distributed with pydantic optional at installation time but required at runtime.
 
-This choice probably strikes you as odd, but it simplifies portability across platforms.
+This choice probably strikes you as odd, but it simplifies portability.
 
-For example, WebAssembly deployments with Pyodide struggle to handle packages that aren't pure Python.
+For example, WebAssembly deployments with Pyodide struggle to handle packages that
+aren't pure Python.
 
 However, Pydantic is available via Pyodide's micropip package manager.
 
-Making pydantic optional means that consumers of the library can provide pydantic themselves on different platforms.
+Making pydantic optional means that consumers of the library must provide pydantic
+themselves on different platforms.
 """
 
 try:
@@ -26,9 +28,11 @@ try:
         computed_field,
         model_validator,
     )
+    from pydantic_core import ErrorDetails
 except ImportError as e:
     raise ImportError(
-        "pydantic is required to use this package. Install with `pip install gwascatalog.sumstatlib[pydantic]`."
+        "pydantic is required to use this package. Install with `pip install "
+        "gwascatalog.sumstatlib[pydantic]`."
     ) from e
 else:
     import pydantic
@@ -48,4 +52,5 @@ __all__ = [
     "ValidationInfo",
     "computed_field",
     "model_validator",
+    "ErrorDetails",
 ]

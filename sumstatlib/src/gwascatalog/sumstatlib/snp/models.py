@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from gwascatalog.sumstatlib._pydantic import BaseModel
-
 from gwascatalog.sumstatlib.core.sumstat_types import (
     BasePairLocation,
     Beta,

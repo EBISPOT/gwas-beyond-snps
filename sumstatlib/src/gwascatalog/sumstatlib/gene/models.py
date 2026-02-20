@@ -1,32 +1,24 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Self, final, Annotated
+from typing import TYPE_CHECKING, Annotated, ClassVar, Self, final
 
 from gwascatalog.sumstatlib._pydantic import (
+    AliasChoices,
+    Field,
     PrivateAttr,
     model_validator,
-    Field,
-    AliasChoices,
 )
-
-from gwascatalog.sumstatlib.core.helpers import check_confidence_interval_structure
+from gwascatalog.sumstatlib.constants import GENE_FIELD_INDEX_MAP, MIN_GENE_RECORDS
 from gwascatalog.sumstatlib.core.models import BaseSumstatModel
 from gwascatalog.sumstatlib.core.sumstat_types import (
     BasePairEnd,
     BasePairStart,
-    Beta,
     Chromosome,
-    ConfidenceIntervalLower,
-    ConfidenceIntervalUpper,
-    OddsRatio,
-    StandardError,
-    SampleSizePerVariant,
+    PrimaryEffectSizeField,
 )
 from gwascatalog.sumstatlib.gene.sumstat_types import (
     EnsemblGeneID,
     HGNCGeneSymbol,
-    PrimaryEffectSizeField,
-    ZScore,
 )
 
 if TYPE_CHECKING:
@@ -49,6 +41,8 @@ class GeneSumstatModel(BaseSumstatModel):
     Validation context keys:
       - allow_zero_pvalues (bool, optional):
     """
+
+    MIN_RECORDS: ClassVar[int] = MIN_GENE_RECORDS
 
     # at least one type of gene name is mandatory
     ensembl_gene_id: Annotated[
@@ -94,65 +88,6 @@ class GeneSumstatModel(BaseSumstatModel):
         ),
     ]
 
-    # validation context: set primary effect size
-    z_score: Annotated[
-        ZScore | None,
-        Field(
-            default=None,
-            validation_alias=AliasChoices("z_score", "zscore", "z"),
-            serialization_alias="z_score",
-        ),
-    ]
-    odds_ratio: Annotated[
-        OddsRatio | None,
-        Field(
-            default=None,
-            validation_alias=AliasChoices("odds_ratio", "OR"),
-            serialization_alias="odds_ratio",
-        ),
-    ]
-    beta: Annotated[
-        Beta | None,
-        Field(
-            default=None,
-            validation_alias=AliasChoices("beta", "b"),
-            serialization_alias="beta",
-        ),
-    ]
-    standard_error: Annotated[
-        StandardError | None,
-        Field(
-            default=None,
-            validation_alias=AliasChoices("standard_error", "se"),
-            serialization_alias="standard_error",
-        ),
-    ]
-
-    confidence_interval_lower: Annotated[
-        ConfidenceIntervalLower | None,
-        Field(
-            default=None,
-            validation_alias=AliasChoices("confidence_interval_lower", "ci_lower"),
-            serialization_alias="ci_lower",
-        ),
-    ]
-
-    confidence_interval_upper: Annotated[
-        ConfidenceIntervalUpper | None,
-        Field(
-            default=None,
-            validation_alias=AliasChoices("confidence_interval_upper", "ci_upper"),
-            serialization_alias="ci_upper",
-        ),
-    ]
-
-    n: Annotated[
-        SampleSizePerVariant | None,
-        Field(
-            default=None, validation_alias=AliasChoices("n"), serialization_alias="n"
-        ),
-    ]
-
     def validate_semantics(self):
         raise NotImplementedError
 
@@ -161,14 +96,26 @@ class GeneSumstatModel(BaseSumstatModel):
     # runtime, so adding a field doesn't make sense
     _primary_effect_size: PrimaryEffectSizeField = PrivateAttr()
 
-    # TODO: set up primary effect size
-    # def model_post_init(self, context: Any) -> None:
-    #     if "primary_effect_size" not in context:
-    #         raise ValueError(
-    #             "primary effect size field must be provided via validation context"
-    #         )
-    #
-    #     self._primary_effect_size = context["primary_effect_size"]
+    def model_post_init(self, context: Any) -> None:
+        if "primary_effect_size" not in context:
+            raise ValueError(
+                "primary effect size field must be provided via validation context"
+            )
+
+        self._primary_effect_size = context["primary_effect_size"]
+
+    def output_field_order(self) -> list[str]:
+        order: list[str] = []
+
+        for field, index in GENE_FIELD_INDEX_MAP.items():
+            if getattr(self, field) is not None:
+                order.insert(index, field)
+
+        # Extra fields (extra="allow") — stable order from __pydantic_extra__
+        extra = self.__pydantic_extra__ or {}
+
+        order.extend(extra.keys())
+        return order
 
     @model_validator(mode="after")
     def validate_location(self) -> Self:
@@ -195,49 +142,6 @@ class GeneSumstatModel(BaseSumstatModel):
                 raise ValueError("Missing ensembl_gene_id or hgnc_symbol")
             case _:
                 return self
-
-    @model_validator(mode="after")
-    def check_confidence_interval_structure(self) -> Self:
-        check_confidence_interval_structure(
-            ci_lower=self.confidence_interval_lower,
-            ci_upper=self.confidence_interval_upper,
-        )
-        return self
-
-    @model_validator(mode="after")
-    def check_effect_size_fields(self) -> Self:
-        """Only one effect size value can be provided."""
-        match (self.z_score, self.odds_ratio, self.beta):
-            case None, None, None:
-                return self
-            case (float(), None, None) | (None, float(), None) | (None, None, float()):
-                return self
-            case _:
-                raise ValueError("Provide only one value: z_score, odds_ratio, beta")
-
-    @model_validator(mode="after")
-    def check_effect_size_in_specified_interval(self) -> Self:
-        """A provided effect size must be inside a provided confidence interval"""
-        if self.effect_size is None:
-            return self
-
-        if (
-            self.confidence_interval_lower is None
-            or self.confidence_interval_upper is None
-        ):
-            return self
-
-        if not (
-            self.confidence_interval_lower
-            <= self.effect_size
-            <= self.confidence_interval_upper
-        ):
-            raise ValueError(
-                f"{self.effect_size} is outside interval "
-                f"{self.confidence_interval_lower} and {self.confidence_interval_upper}"
-            )
-
-        return self
 
     @property
     def effect_size(self) -> float | None:
