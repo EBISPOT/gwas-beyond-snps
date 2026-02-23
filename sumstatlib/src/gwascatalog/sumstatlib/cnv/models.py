@@ -87,16 +87,20 @@ class CNVSumstatModel(BaseSumstatModel):
     _primary_effect_size: PrimaryEffectSizeField = PrivateAttr()
 
     def model_post_init(self, context: Any) -> None:
-        if "assembly" not in context:
-            raise ValueError("genome assembly must be provided via validation context")
+        if context is None:
+            return  # model_construct() should still work
 
-        self._assembly = GenomeAssembly(context["assembly"])
-
-        if "primary_effect_size" not in context:
+        try:
+            assembly = context["assembly"]
+            primary_effect_size = context["primary_effect_size"]
+        except (TypeError, KeyError):
             raise ValueError(
-                "primary effect size field must be provided via validation context"
+                "genome assembly and primary effect size must be provided via "
+                "validation context"
             )
-        self._primary_effect_size = context["primary_effect_size"]
+        else:
+            self._assembly = GenomeAssembly(assembly)
+            self._primary_effect_size = primary_effect_size
 
     def output_field_order(self) -> list[str]:
         order: list[str] = []
