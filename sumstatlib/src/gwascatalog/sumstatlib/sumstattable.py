@@ -117,26 +117,15 @@ class SumstatTable:
 
         return header
 
-    @cached_property
-    def output_fieldnames(self) -> list[str]:
-        """Determine output column order from the first valid row of the file."""
-        try:
-            row = next(self.parse_csv())
-            instance = self._data_model.model_validate(row, context=self._config)
-            return instance.output_field_order()
-        except ValueError as e:
-            raise ValueError("First row failed validation, failing fast") from e
-
     def validate_rows(self) -> Generator[dict, None, None]:
         """Validate all rows, storing errors in self._errors and yielding validated
         rows.
         """
-        include_fields = set(self.output_fieldnames)
         for i, row in enumerate(self.parse_csv()):
             try:
                 validated = self._data_model.model_validate(
                     row, context=self._config
-                ).model_dump(include=include_fields)
+                ).model_dump()
             except ValidationError as exc:
                 for error in exc.errors():
                     self._errors.append(
@@ -244,7 +233,6 @@ class SumstatWriter:
         self._valid_count = 0
         self._fh: IO[str] | None = None
         self._csv_writer = None
-        self._fieldnames = self._table.output_fieldnames
 
     def __enter__(self) -> Self:
         if self._compress:
@@ -252,9 +240,10 @@ class SumstatWriter:
         else:
             self._fh = self._tmp_path.open("w", encoding="utf-8", newline="")
 
+        # TODO: programmatically set field names
         self._csv_writer = csv.DictWriter(
             self._fh,
-            fieldnames=self._table.output_fieldnames,
+            fieldnames=["chromosome"],
             delimiter="\t",
             extrasaction="ignore",
         )

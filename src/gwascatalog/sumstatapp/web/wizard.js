@@ -441,7 +441,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Start Web Worker (Pyodide loads off the main thread)
   worker = new Worker("validation-worker.js");
-  showLoading("Loading Python environment…");
+  showLoading("Loading Python environment...");
   worker.onmessage = ({ data: msg }) => {
     if (msg.type === "ready") {
       workerReady = true;

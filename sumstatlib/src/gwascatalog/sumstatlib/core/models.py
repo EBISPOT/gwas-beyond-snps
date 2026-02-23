@@ -170,16 +170,6 @@ class BaseSumstatModel(BaseModel, abc.ABC):
                 return "hazard_ratio"
 
     @abc.abstractmethod
-    def output_field_order(self) -> list[str]:
-        """Return serialization alias names in the desired output column order.
-
-        Called on a validated instance to determine output column ordering.
-        Only fields that are present (non-None) or mandatory should appear.
-        Extra fields (model_config extra='allow') are appended at the end.
-        """
-        raise NotImplementedError
-
-    @abc.abstractmethod
     def validate_semantics(self) -> None:
         """Does this data make sense in the context of the domain and the real world?
 

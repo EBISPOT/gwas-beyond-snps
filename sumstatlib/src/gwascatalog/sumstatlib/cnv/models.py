@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Any, ClassVar, Self, final
+from typing import Annotated, Any, ClassVar, Self, final, Mapping
 
 from gwascatalog.sumstatlib._pydantic import (
     AliasChoices,
@@ -43,6 +43,8 @@ class CNVSumstatModel(BaseSumstatModel):
     """
 
     MIN_RECORDS: ClassVar[int] = MIN_CNV_RECORDS
+    FIELD_MAP: ClassVar[Mapping[str, int]] = CNV_FIELD_INDEX_MAP
+    VALID_FIELD_NAMES: ClassVar[list[str]] = list(CNV_FIELD_INDEX_MAP.keys())
 
     chromosome: Annotated[
         Chromosome,
@@ -101,19 +103,6 @@ class CNVSumstatModel(BaseSumstatModel):
         else:
             self._assembly = GenomeAssembly(assembly)
             self._primary_effect_size = primary_effect_size
-
-    def output_field_order(self) -> list[str]:
-        order: list[str] = []
-
-        for field, index in CNV_FIELD_INDEX_MAP.items():
-            if getattr(self, field) is not None:
-                order.insert(index, field)
-
-        # Extra fields (extra="allow") — stable order from __pydantic_extra__
-        extra = self.__pydantic_extra__ or {}
-
-        order.extend(extra.keys())
-        return order
 
     def validate_semantics(self) -> None:
         # validate start location is smaller than chromosome size?

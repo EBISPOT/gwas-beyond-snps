@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, ClassVar, Self, final
+from typing import TYPE_CHECKING, Annotated, ClassVar, Self, final, Mapping
 
 from gwascatalog.sumstatlib._pydantic import (
     AliasChoices,
@@ -43,6 +43,8 @@ class GeneSumstatModel(BaseSumstatModel):
     """
 
     MIN_RECORDS: ClassVar[int] = MIN_GENE_RECORDS
+    FIELD_MAP: ClassVar[Mapping[str, int]] = GENE_FIELD_INDEX_MAP
+    VALID_FIELD_NAMES: ClassVar[list[str]] = list(GENE_FIELD_INDEX_MAP.keys())
 
     # at least one type of gene name is mandatory
     ensembl_gene_id: Annotated[
@@ -109,18 +111,9 @@ class GeneSumstatModel(BaseSumstatModel):
         else:
             self._primary_effect_size = primary_effect_size
 
-    def output_field_order(self) -> list[str]:
-        order: list[str] = []
-
-        for field, index in GENE_FIELD_INDEX_MAP.items():
-            if getattr(self, field) is not None:
-                order.insert(index, field)
-
-        # Extra fields (extra="allow") — stable order from __pydantic_extra__
-        extra = self.__pydantic_extra__ or {}
-
-        order.extend(extra.keys())
-        return order
+    @classmethod
+    def valid_field_names(cls) -> list[str]:
+        return list(GENE_FIELD_INDEX_MAP.keys())
 
     @model_validator(mode="after")
     def validate_location(self) -> Self:
