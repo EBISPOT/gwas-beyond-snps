@@ -24,6 +24,7 @@ try:
         PositiveInt,
         PrivateAttr,
         StringConstraints,
+        ValidationError,
         ValidationInfo,
         computed_field,
         model_validator,
@@ -53,4 +54,5 @@ __all__ = [
     "computed_field",
     "model_validator",
     "ErrorDetails",
+    "ValidationError",
 ]

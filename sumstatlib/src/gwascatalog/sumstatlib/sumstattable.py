@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import csv
 import gzip
+import logging
 from functools import cached_property
 from pathlib import Path
 from typing import IO, TYPE_CHECKING, Literal, TypedDict
 
-from pydantic import ValidationError
-
+from gwascatalog.sumstatlib._pydantic import ValidationError
 from gwascatalog.sumstatlib.core.sumstat_enums import GenomeAssembly  # noqa: TC001
 
 if TYPE_CHECKING:
@@ -15,21 +15,33 @@ if TYPE_CHECKING:
 
     from gwascatalog.sumstatlib.core.models import BaseSumstatModel
 
+logger = logging.getLogger(__name__)
+
 
 def _is_gzip(path: Path) -> bool:
-    """Check whether *path* starts with the gzip magic bytes."""
+    """Check whether path starts with the gzip magic bytes."""
     with path.open("rb") as f:
         return f.read(2) == b"\x1f\x8b"
 
 
 class SumstatConfig(TypedDict):
+    """Runtime configuration for validating summary stats"""
+
     allow_zero_p_values: bool
     assembly: GenomeAssembly
     primary_effect_size: Literal["beta", "odds_ratio", "zscore"]
 
 
+class SumstatError(TypedDict):
+    """A parsed pydantic ValidationError"""
+
+    row: int
+    loc: int
+    msg: str
+
+
 class SumstatTable:
-    MAX_ERRORS = 200
+    MAX_ERRORS = 100
 
     def __init__(
         self,
@@ -40,7 +52,7 @@ class SumstatTable:
         self._data_model = data_model
         self._path = Path(input_path)
         self._config = config
-        self._errors: list[ErrorDetails] = []
+        self._errors: list[SumstatError] = []
 
         if not self._path.exists():
             raise FileNotFoundError(self._path)
@@ -71,6 +83,10 @@ class SumstatTable:
             reader = csv.DictReader(f, dialect=dialect)
             yield from reader
 
+    @property
+    def has_validation_failed(self) -> bool:
+        """Have any ValidationErrors been raised?"""
+        return len(self._errors) > 0
 
     @cached_property
     def n_rows(self) -> int:
@@ -98,25 +114,30 @@ class SumstatTable:
             return instance.output_field_order()  # breaks the loop
         raise ValueError("No rows found to determine output column order")
 
-    def validate_rows(self) -> None:
+    def validate_rows(self) -> Generator[dict, None, None]:
         """Validate all rows, storing errors in self._errors and yielding validated
         rows.
         """
-        for row in self._parse_csv():
+        include_fields = set(self.output_fieldnames)
+        for i, row in enumerate(self._parse_csv()):
             try:
-                _ = self._data_model.model_validate(row, context=self._config).model_dump(
-                    include=set(self.output_fieldnames)
-                )
+                validated = self._data_model.model_validate(
+                    row, context=self._config
+                ).model_dump(include=include_fields)
             except ValidationError as exc:
                 for error in exc.errors():
-                    SumstatError(error.get("l"))
+                    self._errors.append(
+                        SumstatError(row=i, loc=error["loc"], msg=error["msg"])
+                    )
 
-                pass
+                if len(self._errors) >= self.MAX_ERRORS:
+                    logger.critical(
+                        f"Stopped validation after {self.MAX_ERRORS} errors"
+                    )
+                    break
+            else:
+                yield validated
 
-    def errors(self) -> Iterable[tuple[int, Exception]]:
+    def errors(self) -> Iterable[SumstatError]:
         """Return all row errors encountered"""
         return self._errors
-
-    def has_any_errors(self) -> bool:
-        """Whether any errors occurred during row validation."""
-        return bool(self._errors)

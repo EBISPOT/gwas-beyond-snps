@@ -246,6 +246,13 @@ class BaseSumstatModel(BaseModel, abc.ABC):
         return self
 
     @model_validator(mode="after")
+    def check_standard_error(self):
+        """Standard error is"""
+        if self.effect_size_type is not None and self.standard_error is None:
+            raise ValueError(f"Standard error is missing for {self.effect_size_type}")
+        return self
+
+    @model_validator(mode="after")
     def check_confidence_interval(self) -> Self:
         lower = self.confidence_interval_lower
         upper = self.confidence_interval_upper
@@ -257,7 +264,8 @@ class BaseSumstatModel(BaseModel, abc.ABC):
         # Partial CI provided
         if lower is None or upper is None:
             raise ValueError(
-                "confidence_interval_lower and confidence_interval_upper must be provided together"
+                "confidence_interval_lower and confidence_interval_upper must be "
+                "provided together"
             )
 
         # note: assumes only one effect size has already been validated
