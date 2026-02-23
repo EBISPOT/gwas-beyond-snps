@@ -94,6 +94,26 @@ class SumstatTable:
             reader = csv.DictReader(f, dialect=dialect)
             yield from reader
 
+    @cached_property
+    def input_fieldnames(self) -> frozenset[str]:
+        row = next(self.parse_csv())
+        return frozenset(row.keys())
+
+    @cached_property
+    def output_fieldnames(self) -> list[str]:
+        """ Get output CSV column names in a consistent order"""
+        input_header = self.input_fieldnames
+        field_order = []
+
+        for key, index in self.data_model.FIELD_MAP.items():
+            if key in input_header:
+                field_order.insert(index, key)
+
+        extras = list(input_header - set(field_order))
+        field_order.extend(extras)
+        return field_order
+
+
     @property
     def has_validation_failed(self) -> bool:
         """Have any ValidationErrors been raised?"""
@@ -240,12 +260,11 @@ class SumstatWriter:
         else:
             self._fh = self._tmp_path.open("w", encoding="utf-8", newline="")
 
-        # TODO: programmatically set field names
         self._csv_writer = csv.DictWriter(
             self._fh,
-            fieldnames=["chromosome"],
+            fieldnames=self._table.output_fieldnames,
             delimiter="\t",
-            extrasaction="ignore",
+            extrasaction="raise",
         )
         self._csv_writer.writeheader()
         return self
@@ -298,7 +317,7 @@ class SumstatWriter:
                     break
             else:
                 self._valid_count += 1
-                self._csv_writer.writerow(instance.model_dump())
+                self._csv_writer.writerow(instance.model_dump(include=self._table.output_fieldnames))
                 yield ValidatedRow(row_number=i, is_valid=True)
 
     def run(self):

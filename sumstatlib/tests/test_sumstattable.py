@@ -265,6 +265,11 @@ class TestWriterProgress:
         assert len(results) == cnv_n_rows
         assert all(r.is_valid for r in results)
 
+        with output.open(encoding="utf-8") as f:
+            # check the first few column names are standardised
+            written_fieldnames = csv.DictReader(f, delimiter="\t").fieldnames[:6]
+            assert set(written_fieldnames).issubset(cnv_table.data_model.VALID_FIELD_NAMES)
+
     def test_rows_processed_count(self, cnv_table, cnv_n_rows, tmp_path):
         output = tmp_path / "output.tsv"
         with cnv_table.open_writer(output) as writer:
