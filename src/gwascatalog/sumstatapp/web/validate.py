@@ -189,16 +189,24 @@ def validate_file(config_json: str) -> str:
                         error_count=len(sumstat_table.errors),
                         elapsed=time.monotonic() - start_time,
                     )
-            writer.commit()
 
+        has_output = valid_count > 0 and not sumstat_table.has_validation_failed
         elapsed = time.monotonic() - start_time
         rate = rows_processed / elapsed if elapsed > 0 else 0
+
+        # Transform errors: SumstatError uses 'msg' key, but the JS
+        # front-end expects 'message'.
+        errors_for_display = [
+            {"row": e["row"], "message": e["msg"]}
+            for e in sumstat_table.errors
+        ]
+
         return json.dumps(
             {
                 "errorCount": len(sumstat_table.errors),
-                "errors": sumstat_table.errors,
+                "errors": errors_for_display,
                 "validRowCount": valid_count,
-                "hasOutput": valid_count > 0,
+                "hasOutput": has_output,
                 "elapsedSeconds": round(elapsed, 1),
                 "rowsPerSecond": round(rate),
             }

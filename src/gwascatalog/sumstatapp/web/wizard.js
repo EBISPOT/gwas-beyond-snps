@@ -348,6 +348,16 @@ async function downloadOutput() {
 
     await callWorker("cleanup");
     hasValidatedOutput = false;
+  } catch (err) {
+    console.error("Download failed:", err);
+    displayResults({
+      errorCount: 1,
+      errors: [
+        { row: 0, message: "Download failed: " + (err.message || String(err)) },
+      ],
+      validRowCount: 0,
+      hasOutput: false,
+    });
   } finally {
     hideLoading();
   }

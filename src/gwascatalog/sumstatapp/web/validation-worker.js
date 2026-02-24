@@ -102,10 +102,22 @@ self.onmessage = async ({ data: msg }) => {
         });
     }
   } catch (err) {
+    // Emscripten FS.ErrnoError may be a plain object (not extending Error),
+    // so String(err) can return "[object Object]".  Extract something useful.
+    let message;
+    if (err instanceof Error) {
+      message = err.message;
+    } else if (typeof err === "string") {
+      message = err;
+    } else if (typeof err === "object" && err !== null) {
+      message = err.message || err.name || JSON.stringify(err);
+    } else {
+      message = String(err);
+    }
     self.postMessage({
       type: "error",
       id,
-      error: err.message || String(err),
+      error: message,
     });
   }
 };
