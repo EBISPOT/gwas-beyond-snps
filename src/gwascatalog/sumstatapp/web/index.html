@@ -331,7 +331,7 @@
 
         <!-- Warnings (hidden by default, toggled via JS + hidden attribute) -->
         <div class="wizard-warning" id="warn-snp" hidden role="status">
-          <p><strong>SNP submissions are not supported by this tool.</strong></p>
+          <p><strong>SNP submissions are not supported by this tool yet.</strong></p>
           <p>
             Please see
             <a href="https://github.com/ebispot/gwas-sumstats-tools">gwas-sumstats-tools</a>
@@ -345,7 +345,7 @@
             currently validated by the GWAS Catalog.
           </p>
           <p>
-            To enquire about submitting a non-standard data type, please
+            To enquire about submitting a non-standard data type or pilot study, please
             contact <a href="mailto:gwas-subs@ebi.ac.uk">gwas-subs@ebi.ac.uk</a>.
           </p>
         </div>
@@ -403,6 +403,10 @@
             Z-score
           </label>
           <label class="radio-option">
+            <input type="radio" name="effect_size" value="hazard_ratio">
+            Hazard ratio
+          </label>
+          <label class="radio-option">
             <input type="radio" name="effect_size" value="none">
             My statistical model can't measure effect size
           </label>
@@ -410,13 +414,13 @@
 
         <div class="wizard-warning" id="warn-no-effect-size" hidden role="status">
           <p>
-            All CNV and SNP submissions to the GWAS Catalog must include an
-            effect size estimate. Please contact
-            <a href="mailto:gwas-subs@ebi.ac.uk">gwas-subs@ebi.ac.uk</a>
-            if you have questions.
+            All SNP and CNV submissions to the GWAS Catalog must include an effect size estimate.
           </p>
           <p>
-            However, effect sizes are optional (but encouraged) for gene-based GWAS.
+            Effect sizes are optional (but encouraged) for gene-based GWAS.
+          </p>
+          <p>
+            Some kinds of studies, like meta-analyses, won't have effect sizes or uncertainty estimates. Please contact <a href="mailto:gwas-subs@ebi.ac.uk">gwas-subs@ebi.ac.uk</a> to submit this kind of data or ask questions.
           </p>
         </div>
 
@@ -479,9 +483,10 @@
           <summary>Why do we ask this?</summary>
           <p>
             Thresholding or rounding <em>p</em> values limits the downstream
-            usability of the data. If your data includes <em>p</em> values
-            thresholded or rounded to zero, please provide negative log₁₀
-            <em>p</em> values instead.
+            usability of the data.
+          </p>
+          <p>
+            If your data includes <em>p</em> values thresholded or rounded to zero, please provide negative log₁₀ <em>p</em> values instead.
           </p>
         </details>
 
