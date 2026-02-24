@@ -231,7 +231,7 @@ function populateSummary() {
 async function validateFile() {
   const btn = document.getElementById("btn-validate");
   btn.disabled = true;
-  btn.textContent = "Validating…";
+  btn.textContent = "Validating...";
 
   try {
     if (!workerReady) {
@@ -240,7 +240,7 @@ async function validateFile() {
       );
     }
 
-    showLoading("Uploading file…");
+    showLoading("Uploading file...");
     await uploadFileToVFS();
 
     showLoading(LOADING_MESSAGE);
@@ -397,6 +397,47 @@ function handleValidationProgress(msg) {
     msg.errorCount.toLocaleString();
 }
 
+// ── Example file downloads ──────────────────────────────────────
+
+const EXAMPLE_HINTS = {
+  "static/examples/valid-gene.csv":
+    "This file passes validation. In the wizard, choose: Variation type -> Genes.",
+  "static/examples/invalid-gene.csv":
+    "This file contains deliberate errors. In the wizard, choose: Variation type -> Genes.",
+  "static/examples/valid-cnv.csv":
+    "This file passes validation. In the wizard, choose: Variation type -> CNV, Assembly -> GRCh38.",
+  "static/examples/invalid-cnv.csv":
+    "This file contains deliberate errors. In the wizard, choose: Variation type -> CNV, Assembly -> GRCh38.",
+};
+
+function handleExampleSelectChange() {
+  const select = document.getElementById("example-select");
+  const btn = document.getElementById("btn-download-example");
+  const hint = document.getElementById("example-hint");
+  const value = select.value;
+
+  btn.disabled = !value;
+
+  if (value && EXAMPLE_HINTS[value]) {
+    hint.textContent = EXAMPLE_HINTS[value];
+    hint.hidden = false;
+  } else {
+    hint.hidden = true;
+    hint.textContent = "";
+  }
+}
+
+function downloadExample() {
+  const url = document.getElementById("example-select").value;
+  if (!url) return;
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = url.split("/").pop();
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
 // ── Initialisation ───────────────────────────────────────────────
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -416,6 +457,14 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll('input[name="zero_pvalues"]').forEach((r) =>
     r.addEventListener("change", handleZeroPvaluesChange)
   );
+
+  // Example file panel
+  document
+    .getElementById("example-select")
+    .addEventListener("change", handleExampleSelectChange);
+  document
+    .getElementById("btn-download-example")
+    .addEventListener("click", downloadExample);
 
   // File input
   document

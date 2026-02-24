@@ -171,6 +171,66 @@
     }
     .validation-error-row .row-num { font-weight: 600; color: #c00; }
 
+    /* ── Examples panel ────────────────────────────────────────── */
+    .examples-panel {
+      max-width: 960px;
+      width: 100%;
+      margin: 1.5rem auto 0;
+      padding: 0 1.5rem;
+    }
+    .examples-details {
+      border: 1px solid #d0d0ce;
+      border-radius: 4px;
+      background: #f5f5f5;
+    }
+    .examples-summary {
+      cursor: pointer;
+      padding: 0.75rem 1rem;
+      font-weight: 600;
+      color: #3b6fb6;
+      list-style: none;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .examples-summary::-webkit-details-marker { display: none; }
+    .examples-summary::marker { display: none; }
+    .examples-chevron {
+      display: inline-block;
+      transition: transform 0.2s ease;
+      font-style: normal;
+    }
+    .examples-details[open] .examples-chevron { transform: rotate(90deg); }
+    .examples-details[open] .examples-summary {
+      border-bottom: 1px solid #d0d0ce;
+    }
+    .examples-content {
+      padding: 1rem 1.25rem;
+    }
+    .examples-content > p {
+      margin-top: 0;
+      margin-bottom: 1rem;
+      color: #373a36;
+    }
+    .examples-input-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      margin-top: 0.5rem;
+    }
+    .examples-input-row .vf-form__select {
+      flex: 1;
+      min-width: 240px;
+    }
+    .examples-hint {
+      margin-top: 0.5rem;
+      margin-bottom: 0;
+      font-size: 0.85rem;
+      color: #707372;
+    }
+
     /* ── Loading dialog ───────────────────────────────────────── */
     dialog {
       border: none;
@@ -219,7 +279,7 @@
   <header class="vf-global-header">
     <a href="/" class="vf-logo">
       <img
-        src="img/GWASBrowser_logo_whitebackground.jpeg"
+        src="static/img/GWASBrowser_logo_whitebackground.jpeg"
         alt="GWAS Catalog logo"
         class="vf-logo__image"
         loading="lazy"
@@ -250,6 +310,61 @@
       </p>
     </div>
   </section>
+
+  <!-- ============================================================ -->
+  <!-- Example files panel                                          -->
+  <!-- ============================================================ -->
+  <aside class="examples-panel" aria-label="Example files">
+    <details class="examples-details">
+      <summary class="examples-summary">
+        <i class="examples-chevron" aria-hidden="true">▶</i>
+        Examples: try the tool with sample data
+      </summary>
+      <div class="examples-content">
+        <p>
+          Not sure what your data should look like? Download a sample file,
+          walk through the wizard, and upload it at the file selection step
+          to see how validation works.
+        </p>
+        <div>
+          <label for="example-select" class="vf-form__label"
+            >Choose an example file:</label
+          >
+          <div class="examples-input-row">
+            <select
+              id="example-select"
+              class="vf-form__select"
+              aria-label="Select example file"
+            >
+              <option value="">— Select an example —</option>
+              <option value="static/examples/valid-gene.csv">
+                Valid gene-based data
+              </option>
+              <option value="static/examples/invalid-gene.csv">
+                Invalid gene-based data (contains errors)
+              </option>
+              <option value="static/examples/valid-cnv.csv">
+                Valid CNV data
+              </option>
+              <option value="static/examples/invalid-cnv.csv">
+                Invalid CNV data (contains errors)
+              </option>
+            </select>
+            <button
+              type="button"
+              id="btn-download-example"
+              class="vf-button vf-button--secondary"
+              disabled
+              aria-label="Download selected example file"
+            >
+              Download
+            </button>
+          </div>
+          <p class="examples-hint" id="example-hint" hidden aria-live="polite"></p>
+        </div>
+      </div>
+    </details>
+  </aside>
 
   <!-- ============================================================ -->
   <!-- Main content                                                  -->
