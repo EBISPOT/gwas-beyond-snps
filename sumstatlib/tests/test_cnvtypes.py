@@ -3,7 +3,7 @@ from helpers import run_type_validation_test
 
 from gwascatalog.sumstatlib.cnv.sumstat_types import (
     EffectDirectionField,
-    ModelTypeField,
+    StatisticalModelTypeField,
 )
 
 effect_direction_test_cases = [

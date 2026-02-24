@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Any, ClassVar, Self, final, Mapping
+from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Self, final
 
 from gwascatalog.sumstatlib._pydantic import (
     AliasChoices,
@@ -9,9 +9,9 @@ from gwascatalog.sumstatlib._pydantic import (
     computed_field,
     model_validator,
 )
+from gwascatalog.sumstatlib.cnv.sumstat_enums import EffectDirection
 from gwascatalog.sumstatlib.cnv.sumstat_types import (
-    EffectDirectionField,
-    ModelTypeField,
+    StatisticalModelTypeField,
 )
 from gwascatalog.sumstatlib.constants import CNV_FIELD_INDEX_MAP, MIN_CNV_RECORDS
 from gwascatalog.sumstatlib.core.models import BaseSumstatModel
@@ -21,7 +21,11 @@ from gwascatalog.sumstatlib.core.sumstat_types import (
     BasePairStart,
     Chromosome,
     PrimaryEffectSizeField,
+    SampleSizePerVariant,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 @final
@@ -67,18 +71,20 @@ class CNVSumstatModel(BaseSumstatModel):
             serialization_alias="base_pair_end",
         ),
     ]
-    effect_direction: Annotated[
-        EffectDirectionField,
+    statistical_model_type: Annotated[
+        StatisticalModelTypeField,
         Field(
-            validation_alias=AliasChoices("effect_direction"),
-            serialization_alias="effect_direction",
+            validation_alias=AliasChoices(
+                "statistical_model_type", "model_type", "model"
+            ),
+            serialization_alias="model_type",
         ),
     ]
-    model_type: Annotated[
-        ModelTypeField,
+
+    n: Annotated[
+        SampleSizePerVariant | None,
         Field(
-            validation_alias=AliasChoices("model_type", "model"),
-            serialization_alias="model_type",
+            default=None, validation_alias=AliasChoices("n"), serialization_alias="n"
         ),
     ]
 
@@ -86,23 +92,12 @@ class CNVSumstatModel(BaseSumstatModel):
     # adopting this pattern because metadata are provided by a payload or CLI flag at
     # runtime, so adding a field doesn't make sense
     _assembly: GenomeAssembly = PrivateAttr()
-    _primary_effect_size: PrimaryEffectSizeField = PrivateAttr()
 
     def model_post_init(self, context: Any) -> None:
-        if context is None:
-            return  # model_construct() should still work
+        if "assembly" not in context:
+            raise ValueError("genome assembly must be provided via validation context")
 
-        try:
-            assembly = context["assembly"]
-            primary_effect_size = context["primary_effect_size"]
-        except (TypeError, KeyError):
-            raise ValueError(
-                "genome assembly and primary effect size must be provided via "
-                "validation context"
-            )
-        else:
-            self._assembly = GenomeAssembly(assembly)
-            self._primary_effect_size = primary_effect_size
+        self._assembly = GenomeAssembly(context["assembly"])
 
     def validate_semantics(self) -> None:
         # validate start location is smaller than chromosome size?
@@ -112,6 +107,31 @@ class CNVSumstatModel(BaseSumstatModel):
     @property
     def cnv_length(self) -> int:
         return self.base_pair_end - self.base_pair_start
+
+    @computed_field
+    @property
+    def effect_direction(self) -> EffectDirection:
+        effect_size = self.effect_size
+        if effect_size is None:
+            raise ValueError("effect_size must not be None for CNVs")
+
+        # Signed metrics (zero-centered)
+        if self.effect_size_type in {"beta", "z_score"}:
+            if effect_size > 0:
+                return EffectDirection.POSITIVE
+            if effect_size < 0:
+                return EffectDirection.NEGATIVE
+            return EffectDirection.AMBIGUOUS
+
+        # Ratio metrics (one-centered)
+        if self.effect_size_type in {"odds_ratio", "hazard_ratio"}:
+            if effect_size > 1:
+                return EffectDirection.POSITIVE
+            if effect_size < 1:
+                return EffectDirection.NEGATIVE
+            return EffectDirection.AMBIGUOUS
+
+        raise ValueError(f"Invalid effect_size_type: {self.effect_size_type}")
 
     @model_validator(mode="after")
     def validate_location(self) -> Self:
@@ -131,14 +151,3 @@ class CNVSumstatModel(BaseSumstatModel):
             f"{self.base_pair_end}:"
             f"{self._assembly}"
         )
-
-    @model_validator(mode="after")
-    def check_effect_size_fields(self) -> Self:
-        """Only one effect size value can be provided."""
-        match (self.z_score, self.odds_ratio, self.beta):
-            case (float(), None, None) | (None, float(), None) | (None, None, float()):
-                return self
-            case None, None, None:
-                raise ValueError("Provide one effect size value")
-            case _:
-                raise ValueError("Provide only one value: z_score, odds_ratio, beta")

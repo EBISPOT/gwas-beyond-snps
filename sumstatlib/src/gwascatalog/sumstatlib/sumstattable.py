@@ -28,7 +28,6 @@ class SumstatConfig(TypedDict):
 
     allow_zero_p_values: bool
     assembly: GenomeAssembly
-    primary_effect_size: Literal["beta", "odds_ratio", "zscore"]
 
 
 class SumstatError(TypedDict):
@@ -59,6 +58,7 @@ class SumstatTable:
         data_model: type[CNVSumstatModel | GeneSumstatModel],
         input_path: Path,
         config: SumstatConfig,
+        min_records: int | None = None,
     ):
         self._data_model = data_model
         self._path = Path(input_path)
@@ -68,12 +68,17 @@ class SumstatTable:
         if not self._path.exists():
             raise FileNotFoundError(self._path)
 
-        self._min_records = getattr(self._data_model, "MIN_RECORDS", None)
-        if self._min_records is None:
-            raise TypeError(f"{self._data_model} must have MIN_RECORDS")
+        if min_records is None:
+            self._min_records = self._data_model.MIN_RECORDS
+        else:
+            self._min_records = min_records
+
         n_rows = self.n_rows
         if n_rows < self._min_records:
             raise ValueError(f"Not enough rows in file: {n_rows=} {self._min_records=}")
+
+        # Validate first row to check column structure — fail fast on bad columns
+        _ = self.output_fieldnames
 
     def _open_sumstat(self) -> IO[str]:
         if _is_gzip(self._path):
@@ -101,18 +106,42 @@ class SumstatTable:
 
     @cached_property
     def output_fieldnames(self) -> list[str]:
-        """ Get output CSV column names in a consistent order"""
-        input_header = self.input_fieldnames
-        field_order = []
+        """Get output CSV column names in a standardised order.
 
-        for key, index in self.data_model.FIELD_MAP.items():
-            if key in input_header:
-                field_order.insert(index, key)
+        Validates the first data row to resolve aliases to canonical field
+        names and determine which optional fields are present.
 
-        extras = list(input_header - set(field_order))
-        field_order.extend(extras)
-        return field_order
+        Order: known fields sorted by FIELD_MAP index, then extra columns.
+        Only non-null fields are included.
 
+        Raises:
+            ValidationError: If the first row fails validation, indicating
+                an invalid column set (e.g. missing required columns).
+        """
+        first_row = next(self.parse_csv())
+        try:
+            instance = self._data_model.model_validate(first_row, context=self._config)
+        except ValidationError:
+            logger.error(
+                "The first row of %s failed validation. "
+                "This usually means the file has missing or incorrectly "
+                "named columns.",
+                self._path.name,
+            )
+            raise
+
+        present = list(instance.model_dump(exclude_none=True).keys())
+        field_map = self._data_model.FIELD_MAP
+
+        # get a list fields sorted by their field map index
+        known = sorted(
+            [(name, field_map[name]) for name in present if name in field_map],
+            key=lambda pair: pair[1],
+        )
+        # user-specified fields
+        extras = [name for name in present if name not in field_map]
+
+        return [name for name, _ in known] + extras
 
     @property
     def has_validation_failed(self) -> bool:
@@ -124,18 +153,6 @@ class SumstatTable:
         with self._open_sumstat() as f:
             next(f, None)  # skip header
             return sum(1 for _ in f)
-
-    @cached_property
-    def _column_names(self) -> list[str]:
-        header = None
-        for row in self.parse_csv():
-            header = list(row.keys())
-            break
-
-        if header is None:
-            raise ValueError("Can't read header")
-
-        return header
 
     def validate_rows(self) -> Generator[dict, None, None]:
         """Validate all rows, storing errors in self._errors and yielding validated
@@ -317,7 +334,9 @@ class SumstatWriter:
                     break
             else:
                 self._valid_count += 1
-                self._csv_writer.writerow(instance.model_dump(include=self._table.output_fieldnames))
+                self._csv_writer.writerow(
+                    instance.model_dump(include=self._table.output_fieldnames)
+                )
                 yield ValidatedRow(row_number=i, is_valid=True)
 
     def run(self):

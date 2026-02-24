@@ -13,7 +13,7 @@ EffectDirectionField = Annotated[
     ),
 ]
 
-ModelTypeField = Annotated[
+StatisticalModelTypeField = Annotated[
     ModelType,
     Field(
         description="Genetic association model type",

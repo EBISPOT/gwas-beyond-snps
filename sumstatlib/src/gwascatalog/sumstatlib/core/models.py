@@ -144,6 +144,12 @@ class BaseSumstatModel(BaseModel, abc.ABC):
         ]
 
     @property
+    def effect_size(self) -> float | None:
+        return next(
+            (item for item in self.effect_size_values if item is not None), None
+        )
+
+    @property
     def p_value_type(self) -> Literal["p_value", "neg_log10_p_value"]:
         """Returns the type of the p-value attribute"""
         if self.p_value is not None:
@@ -237,7 +243,7 @@ class BaseSumstatModel(BaseModel, abc.ABC):
 
     @model_validator(mode="after")
     def check_standard_error(self):
-        """Standard error is"""
+        """Standard error is mandatory if an effect size is set"""
         if self.effect_size_type is not None and self.standard_error is None:
             raise ValueError(f"Standard error is missing for {self.effect_size_type}")
         return self

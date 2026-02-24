@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, ClassVar, Self, final, Mapping
+from typing import TYPE_CHECKING, Annotated, ClassVar, Self, final
 
 from gwascatalog.sumstatlib._pydantic import (
     AliasChoices,
@@ -22,6 +22,7 @@ from gwascatalog.sumstatlib.gene.sumstat_types import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from typing import Any
 
 
@@ -92,24 +93,6 @@ class GeneSumstatModel(BaseSumstatModel):
 
     def validate_semantics(self):
         raise NotImplementedError
-
-    # private attributes to avoid polluting the data model
-    # adopting this pattern because metadata are provided by a payload or CLI flag at
-    # runtime, so adding a field doesn't make sense
-    _primary_effect_size: PrimaryEffectSizeField = PrivateAttr()
-
-    def model_post_init(self, context: Any) -> None:
-        if context is None:
-            return  # model_construct() should still work
-
-        try:
-            primary_effect_size = context["primary_effect_size"]
-        except (TypeError, KeyError):
-            raise ValueError(
-                "primary effect size must be provided via validation context"
-            )
-        else:
-            self._primary_effect_size = primary_effect_size
 
     @classmethod
     def valid_field_names(cls) -> list[str]:
