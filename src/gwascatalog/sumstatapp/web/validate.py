@@ -189,16 +189,9 @@ def validate_file(config_json: str) -> str:
                         error_count=len(sumstat_table.errors),
                         elapsed=time.monotonic() - start_time,
                     )
+            writer.commit()
 
-        # Final progress update
         elapsed = time.monotonic() - start_time
-        _post_progress(
-            rows_processed=rows_processed,
-            valid_count=valid_count,
-            error_count=len(sumstat_table.errors),
-            elapsed=time.monotonic() - start_time,
-        )
-
         rate = rows_processed / elapsed if elapsed > 0 else 0
         return json.dumps(
             {
