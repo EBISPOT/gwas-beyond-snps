@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Annotated, ClassVar, Self, final
 from gwascatalog.sumstatlib._pydantic import (
     AliasChoices,
     Field,
-    PrivateAttr,
     model_validator,
 )
 from gwascatalog.sumstatlib.constants import GENE_FIELD_INDEX_MAP, MIN_GENE_RECORDS
@@ -14,7 +13,6 @@ from gwascatalog.sumstatlib.core.sumstat_types import (
     BasePairEnd,
     BasePairStart,
     Chromosome,
-    PrimaryEffectSizeField,
 )
 from gwascatalog.sumstatlib.gene.sumstat_types import (
     EnsemblGeneID,
@@ -23,7 +21,6 @@ from gwascatalog.sumstatlib.gene.sumstat_types import (
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
-    from typing import Any
 
 
 @final

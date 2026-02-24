@@ -5,7 +5,7 @@ import gzip
 import logging
 from functools import cached_property
 from pathlib import Path
-from typing import IO, TYPE_CHECKING, Literal, NamedTuple, Self, TypedDict
+from typing import IO, TYPE_CHECKING, NamedTuple, Self, TypedDict
 
 from gwascatalog.sumstatlib._pydantic import ValidationError
 
@@ -122,13 +122,13 @@ class SumstatTable:
         try:
             instance = self._data_model.model_validate(first_row, context=self._config)
         except ValidationError:
-            logger.error(
-                "The first row of %s failed validation. "
+            msg = (
+                f"The first row of {self._path.name} failed validation. "
                 "This usually means the file has missing or incorrectly "
-                "named columns.",
-                self._path.name,
+                "named columns. Valid column names include: "
+                f"{self.data_model.VALID_FIELD_NAMES}"
             )
-            raise
+            raise ValueError(msg)
 
         present = list(instance.model_dump(exclude_none=True).keys())
         field_map = self._data_model.FIELD_MAP
@@ -191,37 +191,7 @@ class SumstatTable:
         *,
         compress: bool | None = None,
     ) -> SumstatWriter:
-        """Create a transactional writer for streaming validated output.
-
-        Returns a context manager that validates rows, writes valid ones
-        to a temporary file, and atomically renames on ``commit()``.
-        If the context exits without ``commit()``, the temp file is deleted.
-
-        Args:
-            output_path: Final destination for the validated output file.
-            compress: Gzip-compress the output.  Defaults to ``True`` if
-                *output_path* ends with ``'.gz'``.
-
-        Returns:
-            A :class:`SumstatWriter` context manager.
-
-        Example (web / Pyodide)::
-
-            table = SumstatTable(model, path, config)
-            with table.open_writer(output_path) as writer:
-                for row in writer:
-                    if row.row_number % 10_000 == 0:
-                        post_progress(writer.rows_processed, writer.valid_count)
-                if not table.has_validation_failed:
-                    writer.commit()
-
-        Example (CLI)::
-
-            with table.open_writer(output_path) as writer:
-                for _ in writer:
-                    pass
-                writer.commit()
-        """
+        """Create a writer for streaming validated output."""
         return SumstatWriter(self, output_path, compress=compress)
 
     @property
@@ -235,10 +205,9 @@ class SumstatTable:
 
 
 class SumstatWriter:
-    """Transactional streaming writer for validated summary statistics.
+    """Streaming writer for validated summary statistics.
 
-    Validates each row against the data model and writes valid rows to a
-    temporary file. Guidelines for consumers:
+    Validates each row against the data model. Guidelines for consumers:
 
     - _Always_ use this class as a context manager
     - Iterate to process rows
@@ -246,7 +215,6 @@ class SumstatWriter:
     - If you want to report progress, add a check inside the iteration (e.g. every
         10,000 rows send a message or print)
     - If you don't want to report progress, you can use the .run() convenience function
-    - If the context exits with .commit() the temporary file is cleaned up automatically
 
     IMPORTANT: The writer stops early after ``MAX_ERRORS`` (fail-fast-ish). Enough
     errors are collected for a single review pass without processing the entire file.
@@ -264,8 +232,6 @@ class SumstatWriter:
         self._compress = (
             compress if compress is not None else self._output_path.suffix == ".gz"
         )
-        self._tmp_path = self._output_path.parent / (self._output_path.name + ".tmp")
-        self._committed = False
         self._rows_processed = 0
         self._valid_count = 0
         self._fh: IO[str] | None = None
@@ -273,9 +239,9 @@ class SumstatWriter:
 
     def __enter__(self) -> Self:
         if self._compress:
-            self._fh = gzip.open(self._tmp_path, "wt", encoding="utf-8", newline="")
+            self._fh = gzip.open(self._output_path, "wt", encoding="utf-8", newline="")
         else:
-            self._fh = self._tmp_path.open("w", encoding="utf-8", newline="")
+            self._fh = self._output_path.open("w", encoding="utf-8", newline="")
 
         self._csv_writer = csv.DictWriter(
             self._fh,
@@ -297,9 +263,8 @@ class SumstatWriter:
             self._fh = None
             self._csv_writer = None
 
-        # Rollback: delete temp file if not committed
-        if not self._committed and self._tmp_path.exists():
-            self._tmp_path.unlink()
+        if self.has_validation_failed:
+            self._output_path.unlink()
 
     def __iter__(self) -> Generator[ValidatedRow, None, None]:
         """Validate each row, write valid ones, yield progress for all.
@@ -330,7 +295,7 @@ class SumstatWriter:
                     logger.critical(
                         f"Stopped validation after {self._table.MAX_ERRORS} errors"
                     )
-                    # if you expect an exception here it's raised by .commit()
+                    # exceptions intentionally not raised here - they're collected
                     break
             else:
                 self._valid_count += 1
@@ -343,29 +308,6 @@ class SumstatWriter:
         """Validate each row and write valid ones without progress reporting."""
         for _ in self:
             pass  # __iter__ does all the work
-
-    def commit(self) -> None:
-        """Atomically finalise the output file.
-
-        Flushes all buffers, closes the temp file, and renames it to the
-        final output path.
-
-        Raises:
-            RuntimeError: If already committed or any invalid rows were encountered.
-        """
-        if self._committed:
-            raise RuntimeError("Already committed")
-
-        if self._table.has_validation_failed:
-            raise RuntimeError("Cannot commit: validation failed")
-
-        # Close before rename to flush all buffers (including gzip trailer)
-        if self._fh is not None:
-            self._fh.close()
-            self._fh = None
-
-        self._tmp_path.rename(self._output_path)
-        self._committed = True
 
     @property
     def rows_processed(self) -> int:
@@ -383,6 +325,5 @@ class SumstatWriter:
         return len(self._table.errors)
 
     @property
-    def is_committed(self) -> bool:
-        """Whether the output file has been atomically finalized."""
-        return self._committed
+    def has_validation_failed(self) -> bool:
+        return self.error_count > 0

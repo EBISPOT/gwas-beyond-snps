@@ -34,4 +34,4 @@ model_type_test_cases = [
 
 @pytest.mark.parametrize("input_data,expected_error", model_type_test_cases)
 def test_model_type_field(input_data, expected_error):
-    run_type_validation_test(ModelTypeField, input_data, expected_error)
+    run_type_validation_test(StatisticalModelTypeField, input_data, expected_error)

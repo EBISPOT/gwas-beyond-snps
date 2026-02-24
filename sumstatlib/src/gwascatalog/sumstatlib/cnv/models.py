@@ -20,7 +20,6 @@ from gwascatalog.sumstatlib.core.sumstat_types import (
     BasePairEnd,
     BasePairStart,
     Chromosome,
-    PrimaryEffectSizeField,
     SampleSizePerVariant,
 )
 

@@ -9,14 +9,8 @@ from gwascatalog.sumstatlib import (
     SumstatConfig,
     SumstatTable,
 )
-from tests.test_sumstattable import make_cnv_sumstat_row
 
 N_BIG_FILE_ROWS = 25_000_000
-
-
-@pytest.fixture
-def big_sumstat_file():
-    return (make_cnv_sumstat_row() for _ in range(N_BIG_FILE_ROWS))
 
 
 @pytest.mark.parametrize(
@@ -31,7 +25,6 @@ def test_validated_cnv(tmp_path, cnv_file):
     config = SumstatConfig(
         assembly=GenomeAssembly.GRCH38,
         allow_zero_p_values=False,
-        primary_effect_size="beta",
     )
     table = SumstatTable(
         config=config, input_path=cnv_file, data_model=CNVSumstatModel, min_records=5
@@ -40,7 +33,6 @@ def test_validated_cnv(tmp_path, cnv_file):
     out_path = tmp_path / "sumstat.tsv"
     with table.open_writer(output_path=out_path) as writer:
         writer.run()
-        writer.commit()
 
     # check the output fields
     with out_path.open(mode="rt") as f:

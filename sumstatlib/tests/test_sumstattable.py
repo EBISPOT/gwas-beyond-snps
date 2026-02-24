@@ -1,8 +1,8 @@
 import csv
-import random
 from pathlib import Path
 
 import pytest
+from helpers import make_cnv_sumstat_row
 
 from gwascatalog.sumstatlib import (
     CNVSumstatModel,
@@ -11,29 +11,6 @@ from gwascatalog.sumstatlib import (
     ValidatedRow,
 )
 from gwascatalog.sumstatlib.core.sumstat_enums import GenomeAssembly
-
-
-def make_cnv_sumstat_row():
-    chromosome = random.randint(1, 25)
-    base_pair_start = random.randint(1, 100_000)
-    base_pair_end = random.randint(200_000, 300_000)
-    beta = random.random()
-    standard_error = random.random()
-    neg_log10_p_value = random.random()
-    effect_direction = "positive"
-    model_type = "additive"
-    n = random.randint(1, 100_000)
-    return {
-        "chromosome": chromosome,
-        "base_pair_start": base_pair_start,
-        "base_pair_end": base_pair_end,
-        "beta": beta,
-        "standard_error": standard_error,
-        "neg_log10_p_value": neg_log10_p_value,
-        "effect_direction": effect_direction,
-        "model_type": model_type,
-        "n": n,
-    }
 
 
 def make_csv_file(out_path: Path, n_rows: int) -> Path:
@@ -170,17 +147,17 @@ class TestWriterCommit:
         with cnv_table.open_writer(output) as writer:
             for _ in writer:
                 pass
-            writer.commit()
+
+            assert not writer.has_validation_failed
 
         assert output.exists()
-        assert writer.is_committed
+        assert not cnv_table.has_validation_failed
 
     def test_commit_creates_gzip_output(self, cnv_table, tmp_path):
         output = tmp_path / "output.tsv.gz"
         with cnv_table.open_writer(output) as writer:
             for _ in writer:
                 pass
-            writer.commit()
 
         assert output.exists()
         # Verify it's actually gzip by reading magic bytes
@@ -192,62 +169,11 @@ class TestWriterCommit:
         with cnv_table.open_writer(output) as writer:
             for _ in writer:
                 pass
-            writer.commit()
 
         # Count data rows in the output (subtract 1 for header)
         with output.open(encoding="utf-8") as f:
             n_lines = sum(1 for _ in f) - 1  # -1 for header
         assert n_lines == cnv_n_rows
-
-    def test_double_commit_raises(self, cnv_table, tmp_path):
-        output = tmp_path / "output.tsv"
-        with (
-            cnv_table.open_writer(output) as writer,
-            pytest.raises(RuntimeError, match="Already committed"),
-        ):
-            for _ in writer:
-                pass
-            writer.commit()
-            writer.commit()
-
-
-class TestWriterRollback:
-    """Writer cleans up temp file if not committed."""
-
-    def test_no_commit_no_output(self, cnv_table, tmp_path):
-        output = tmp_path / "output.tsv"
-        with cnv_table.open_writer(output) as writer:
-            for _ in writer:
-                pass
-            # deliberately no commit()
-
-        assert not output.exists()
-
-    def test_temp_file_deleted_on_exit(self, cnv_table, tmp_path):
-        output = tmp_path / "output.tsv"
-        tmp_file = output.parent / (output.name + ".tmp")
-        with cnv_table.open_writer(output) as writer:
-            for _ in writer:
-                pass
-            # tmp file exists while context is open
-            # (don't assert — may have been written or not)
-
-        # After context exit without commit, temp file is gone
-        assert not tmp_file.exists()
-
-    def test_temp_file_deleted_on_exception(self, cnv_table, tmp_path):
-        output = tmp_path / "output.tsv"
-        tmp_file = output.parent / (output.name + ".tmp")
-        with (
-            pytest.raises(RuntimeError, match="boom"),
-            cnv_table.open_writer(output) as writer,
-        ):
-            for row in writer:
-                if row.row_number == 5:
-                    raise RuntimeError("boom")
-
-        assert not output.exists()
-        assert not tmp_file.exists()
 
 
 class TestWriterProgress:
@@ -260,7 +186,6 @@ class TestWriterProgress:
             for row in writer:
                 assert isinstance(row, ValidatedRow)
                 results.append(row)
-            writer.commit()
 
         assert len(results) == cnv_n_rows
         assert all(r.is_valid for r in results)
@@ -268,7 +193,9 @@ class TestWriterProgress:
         with output.open(encoding="utf-8") as f:
             # check the first few column names are standardised
             written_fieldnames = csv.DictReader(f, delimiter="\t").fieldnames[:6]
-            assert set(written_fieldnames).issubset(cnv_table.data_model.VALID_FIELD_NAMES)
+            assert set(written_fieldnames).issubset(
+                cnv_table.data_model.VALID_FIELD_NAMES
+            )
 
     def test_rows_processed_count(self, cnv_table, cnv_n_rows, tmp_path):
         output = tmp_path / "output.tsv"
@@ -276,35 +203,23 @@ class TestWriterProgress:
             for _ in writer:
                 pass
             assert writer.rows_processed == cnv_n_rows
-            writer.commit()
 
     def test_valid_count(self, cnv_table, cnv_n_rows, tmp_path):
         output = tmp_path / "output.tsv"
         with cnv_table.open_writer(output) as writer:
             writer.run()
             assert writer.valid_count == cnv_n_rows
-            writer.commit()
 
 
 class TestWriterErrors:
     """Writer handles invalid rows and reports errors."""
 
     def test_mixed_valid_invalid(self, mixed_cnv_table, tmp_path):
-        """When validation fails, don't commit the output file."""
         output = tmp_path / "output.tsv"
-        valid_rows = []
-        invalid_rows = []
-        with (
-            pytest.raises(RuntimeError, match="Cannot commit: validation failed"),
-            mixed_cnv_table.open_writer(output) as writer,
-        ):
-            for row in writer:
-                if row.is_valid:
-                    valid_rows.append(row)
-                else:
-                    invalid_rows.append(row)
-            writer.commit()
+        with mixed_cnv_table.open_writer(output) as writer:
+            writer.run()
 
+        assert writer.has_validation_failed
         assert not output.exists()
 
     def test_commit_with_no_valid_rows_raises(self, tmp_path):
@@ -312,19 +227,12 @@ class TestWriterErrors:
             tmp_path / "only_bad.csv", n_valid=0, n_invalid=100_001
         )
 
-        table = SumstatTable(
-            data_model=CNVSumstatModel,
-            input_path=bad_file,
-            config=CNV_CONFIG,
-        )
-
-        output = tmp_path / "output.tsv"
-        with (
-            pytest.raises(ValueError, match="First row failed validation"),
-            table.open_writer(output) as writer,
-        ):
-            writer.run()
-            writer.commit()
+        with pytest.raises(ValueError, match="The first row"):
+            _ = SumstatTable(
+                data_model=CNVSumstatModel,
+                input_path=bad_file,
+                config=CNV_CONFIG,
+            )
 
     def test_writer_without_context_manager_raises(self, cnv_table, tmp_path):
         output = tmp_path / "output.tsv"
