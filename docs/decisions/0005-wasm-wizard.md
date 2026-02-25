@@ -1,4 +1,4 @@
-# Implement WebAssenbly (Wasm) wizard using PyScript
+# Implement web interface using Pyodide backend
 
 Date: 2026-02-17
 
@@ -8,11 +8,11 @@ Proposed
 
 ## Context
 
-The new summary statistics validation application needs a front end Minimum Viable Product (MVP).
+The new summary statistics validation application needs a graphical user interface.
 
 Portability and ease of use are key goals for the application.
 
-The GWAS and PGS Catalogs have started to deploy user facing applications (e.g. ssf-morph, PGS scoring file validator) using WebAssembly. This repository will follow the same pattern. This is because WASM deployment:
+The GWAS and PGS Catalogs have started to deploy user facing applications (e.g. ssf-morph, PGS scoring file validator) using HTML5 forms and a WebAssembly backend. This repository will follow the same pattern. This is because WASM deployment:
 
 1. Runs in a browser, zero install required for users
 2. Reuses existing Python code without a full JavaScript rewrite (the bioinformatics team is fluent in Python)
@@ -26,12 +26,15 @@ The user persona for this application:
 
 ## Decision
 
-Build a **single-page static web application** using:
+Build a single-page static web application using:
 
-- **PyScript (Pyodide)** to run `sumstatlib` in the browser
-- **Standard HTML5 form elements** for the wizard UI, with a strong preference for semantic HTML elements
-- **EMBL Visual Framework** for styling
-- **Minimal vanilla JavaScript** for PyScript glue and simple interactive elements
+- Pyodide to run `sumstatlib` in the browser
+- Standard HTML5 form elements for the wizard UI, with a strong preference for semantic HTML elements
+- EMBL Visual Framework for styling (https://stable.visual-framework.dev/)
+- Minimal vanilla JavaScript to implement:
+  - a web worker running Pyodide, calling the `sumstatlib` public API
+  - interacting with the emscripten filesystem to upload and download files portably across web browsers
+  - dynamic form-based logic
 
 A gold standard application which implements this approach is the pandoc web app:
 
@@ -47,6 +50,7 @@ The happy path of the application.
 2. Upload a file (less than 700MB typically) using a standard file picker. A pre-flight check must validate the file size and type is sensible (optionally compressed text file which is less than 1GB).
 3. Process the file in Python using sumstatlib and the wizard configuration
 4. Download the outputs of the Python process (a compressed text file)
+5. Display the MD5 checksum of the new file to the user
 
 If validation fails, `ValidationErrors` will be raised by Pydantic. A sample of errors should be collected and displayed visually to the user. Failing fast is important because the file may contain millions of rows.
 
@@ -65,5 +69,3 @@ If validation fails, `ValidationErrors` will be raised by Pydantic. A sample of 
 - **Debugging is challenging**: Debugging a Pyodide session running in Wasm can be hard. Developers in the future might hate us if the application gets more complicated.
 - **Large file limits**: very large files (>700 MB) may cause browser memory
   issues. The CLI remains the recommended tool for very large datasets or bulk data.
-
-
