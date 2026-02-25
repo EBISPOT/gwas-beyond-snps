@@ -436,7 +436,7 @@
           </label>
           <label class="radio-option">
             <input type="radio" name="variation_type" value="GENE">
-            Genes
+            I've aggregated my genetic variants into genes (gene-based GWAS)
           </label>
           <label class="radio-option">
             <input type="radio" name="variation_type" value="other">
@@ -468,6 +468,8 @@
         <!-- Genome assembly (shown for CNV, hidden by default) -->
         <div id="assembly-group" hidden>
           <label for="assembly"><strong>Genome assembly:</strong></label>
+          <p>What reference genome were your variants called against?</p>
+          <p>Please contact <a href="mailto:gwas-subs@ebi.ac.uk">gwas-subs@ebi.ac.uk</a> if you're not sure.</p>
           <select id="assembly" name="assembly" class="vf-form__select">
             <option value="">— Select assembly —</option>
             <option value="GRCh38">GRCh38</option>
