@@ -316,6 +316,15 @@ function displayResults(result) {
     list.appendChild(div);
   }
 
+  // Checksum
+  const checksumPanel = document.getElementById("checksum-panel");
+  if (result.md5Checksum) {
+    document.getElementById("checksum-value").textContent = result.md5Checksum;
+    checksumPanel.hidden = false;
+  } else {
+    checksumPanel.hidden = true;
+  }
+
   // Download button
   hasValidatedOutput = result.hasOutput;
   document.getElementById("btn-download").hidden = !result.hasOutput;

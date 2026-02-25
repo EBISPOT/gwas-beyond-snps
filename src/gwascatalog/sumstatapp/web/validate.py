@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import contextlib
 import gzip
+import hashlib
 import io
 import json
 import logging
@@ -194,6 +195,15 @@ def validate_file(config_json: str) -> str:
         elapsed = time.monotonic() - start_time
         rate = rows_processed / elapsed if elapsed > 0 else 0
 
+        # Compute MD5 checksum of the validated output file
+        md5_checksum: str | None = None
+        if has_output and _OUTPUT_PATH.exists():
+            md5 = hashlib.md5()
+            with _OUTPUT_PATH.open("rb") as f:
+                for chunk in iter(lambda: f.read(8192), b""):
+                    md5.update(chunk)
+            md5_checksum = md5.hexdigest()
+
         # Transform errors: SumstatError uses 'msg' key, but the JS
         # front-end expects 'message'.
         errors_for_display = [
@@ -207,6 +217,7 @@ def validate_file(config_json: str) -> str:
                 "errors": errors_for_display,
                 "validRowCount": valid_count,
                 "hasOutput": has_output,
+                "md5Checksum": md5_checksum,
                 "elapsedSeconds": round(elapsed, 1),
                 "rowsPerSecond": round(rate),
             }
