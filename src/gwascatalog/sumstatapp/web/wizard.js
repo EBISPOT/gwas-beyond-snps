@@ -25,6 +25,7 @@ const STEPS = [
   "welcome",
   "variation",
   "columns",
+  "threshold",
   "file",
   "validate",
 ];
@@ -86,19 +87,23 @@ function readConfig() {
   const data = new FormData(document.getElementById("wizard"));
   const variationType = data.get("variation_type");
 
-  // Gather effect size — radio for CNV, checkboxes for gene
-  let effectSize;
+  let effectSizes;
+  let primaryEffectSize;
   if (variationType === "CNV") {
-    effectSize = data.get("effect_size") || "none";
+    effectSizes = data.getAll("effect_size");
+    primaryEffectSize = data.get("primary_effect_cnv") || (effectSizes.length === 1 ? effectSizes[0] : null);
   } else {
-    const checked = data.getAll("col_gene_effect");
-    effectSize = checked.length > 0 ? checked[0] : "none";
+    effectSizes = data.getAll("gene_effect_size");
+    primaryEffectSize = data.get("primary_effect_gene") || (effectSizes.length === 1 ? effectSizes[0] : null);
   }
 
   return {
     variationType,
     assembly: data.get("assembly"),
-    effectSize,
+    effectSizes,
+    primaryEffectSize: primaryEffectSize || "none",
+    // Legacy single value for validation bridge
+    effectSize: primaryEffectSize || (effectSizes.length > 0 ? effectSizes[0] : "none"),
     pValueType: data.get("p_value_type"),
     allowZeroPvalues: data.get("zero_pvalues") === "yes",
   };
@@ -150,6 +155,18 @@ function handleAssemblyChange() {
 }
 
 function handleEffectSizeChange() {
+  updatePrimaryEffectFieldset(
+    "effect_size", "primary-effect-cnv",
+    "primary_effect_cnv", "primary-effect-cnv-options"
+  );
+  updateColumnsNextButton();
+}
+
+function handleGeneEffectSizeChange() {
+  updatePrimaryEffectFieldset(
+    "gene_effect_size", "primary-effect-gene",
+    "primary_effect_gene", "primary-effect-gene-options"
+  );
   updateColumnsNextButton();
 }
 
@@ -157,16 +174,66 @@ function handlePValueChange() {
   updateColumnsNextButton();
 }
 
-function handleZeroPvaluesChange() {
+// ── Primary effect size helper ───────────────────────────────────
+
+const EFFECT_LABELS = {
+  beta: "Beta",
+  odds_ratio: "Odds ratio",
+  z_score: "Z-score",
+  hazard_ratio: "Hazard ratio",
+};
+
+/**
+ * Show / hide a "primary effect size" radio group and populate it
+ * with the currently selected effect size checkboxes.
+ */
+function updatePrimaryEffectFieldset(checkboxName, fieldsetId, radioName, containerId) {
+  const checked = Array.from(
+    document.querySelectorAll(`input[name="${checkboxName}"]:checked`)
+  );
+  const fieldset = document.getElementById(fieldsetId);
+  const container = document.getElementById(containerId);
+
+  if (checked.length <= 1) {
+    fieldset.hidden = true;
+    container.innerHTML = "";
+    return;
+  }
+
+  // Preserve current selection
+  const currentPrimary = document.querySelector(
+    `input[name="${radioName}"]:checked`
+  )?.value;
+
+  container.innerHTML = "";
+  for (const cb of checked) {
+    const label = document.createElement("label");
+    label.className = "radio-option";
+    const radio = document.createElement("input");
+    radio.type = "radio";
+    radio.name = radioName;
+    radio.value = cb.value;
+    if (cb.value === currentPrimary) radio.checked = true;
+    radio.addEventListener("change", updateColumnsNextButton);
+    label.appendChild(radio);
+    label.appendChild(
+      document.createTextNode(" " + (EFFECT_LABELS[cb.value] || cb.value))
+    );
+    container.appendChild(label);
+  }
+
+  fieldset.hidden = false;
+}
+
+// ── Threshold step ───────────────────────────────────────────────
+
+function handleThresholdChange() {
   const value = document.querySelector(
     'input[name="zero_pvalues"]:checked'
   )?.value;
-  // Show warning in whichever panel is visible
-  const geneWarn = document.getElementById("warn-thresholded-gene");
-  const cnvWarn = document.getElementById("warn-thresholded-cnv");
-  if (geneWarn) geneWarn.hidden = value !== "yes";
-  if (cnvWarn) cnvWarn.hidden = value !== "yes";
-  updateColumnsNextButton();
+  const warn = document.getElementById("warn-thresholded");
+  if (warn) warn.hidden = value !== "yes";
+  document.getElementById("next-threshold").disabled = !value;
 }
 
 // ── Columns checklist logic ──────────────────────────────────────
@@ -180,20 +247,196 @@ function showColumnsFor(type) {
 }
 
 /**
+ * Validate effect size / uncertainty combinations and show / hide specific
+ * error messages. Returns true if any blocking error is present.
+ *
+ * Rules:
+ *   - beta  →  standard_error required; CI fields invalid
+ *   - z_score  →  no uncertainty estimate valid
+ *   - odds_ratio or hazard_ratio  →  both CI bounds required
+ *   - odds_ratio + hazard_ratio together  →  conflict error
+ *
+ * @param {string[]} effectValues - selected effect size values
+ * @param {boolean}  hasSE        - standard_error is checked
+ * @param {boolean}  hasCILower   - ci_lower is checked
+ * @param {boolean}  hasCIUpper   - ci_upper is checked
+ * @param {string}   prefix       - "gene" or "cnv"
+ */
+function validateEffectUncertaintyRules(effectValues, hasSE, hasCILower, hasCIUpper, prefix) {
+  let hasError = false;
+  const hasBeta   = effectValues.includes("beta");
+  const hasOR     = effectValues.includes("odds_ratio");
+  const hasHR     = effectValues.includes("hazard_ratio");
+  const hasZScore = effectValues.includes("z_score");
+  const hasAnyUncertainty = hasSE || hasCILower || hasCIUpper;
+
+  // Beta: SE required; CI invalid
+  const errBeta = document.getElementById(`error-${prefix}-beta-uncertainty`);
+  const betaError = hasBeta && (!hasSE || hasCILower || hasCIUpper);
+  if (errBeta) errBeta.hidden = !betaError;
+  if (betaError) hasError = true;
+
+  // Z-score: no uncertainty estimate valid
+  const errZScore = document.getElementById(`error-${prefix}-zscore-uncertainty`);
+  const zScoreError = hasZScore && hasAnyUncertainty;
+  if (errZScore) errZScore.hidden = !zScoreError;
+  if (zScoreError) hasError = true;
+
+  // OR and HR cannot both be selected
+  const errConflict = document.getElementById(`error-${prefix}-or-hr-conflict`);
+  const orHrConflict = hasOR && hasHR;
+  if (errConflict) errConflict.hidden = !orHrConflict;
+  if (orHrConflict) hasError = true;
+
+  // OR or HR (but not both) requires both CI bounds
+  const errCI = document.getElementById(`error-${prefix}-ci-required`);
+  const needsCI = (hasOR || hasHR) && !orHrConflict;
+  const ciIncomplete = needsCI && (!hasCILower || !hasCIUpper);
+  if (errCI) errCI.hidden = !ciIncomplete;
+  if (ciIncomplete) hasError = true;
+
+  return hasError;
+}
+
+/**
  * Enable / disable the Next button on the columns step.
- * Requires: p-value type selected AND zero-pvalues answered.
- * For CNV: also requires effect size selected.
+ *
+ * Rules:
+ *   - p-value type must be selected (both Gene and CNV)
+ *   - CNV: at least one effect size must be selected
+ *   - If any effect size is selected, at least one uncertainty estimate is required
+ *   - If >1 effect size is selected, a primary must be chosen
+ *   - Gene: gene name must be selected
+ *
+ * Inline error messages are shown / hidden to guide the user.
  */
 function updateColumnsNextButton() {
-  const pValueType = document.querySelector('input[name="p_value_type"]:checked')?.value;
-  const zeroPvalues = document.querySelector('input[name="zero_pvalues"]:checked')?.value;
-  const variationType = document.querySelector('input[name="variation_type"]:checked')?.value;
+  const variationType = document.querySelector(
+    'input[name="variation_type"]:checked'
+  )?.value;
+  const pValueType = document.querySelector(
+    'input[name="p_value_type"]:checked'
+  )?.value;
 
-  let ready = !!pValueType && !!zeroPvalues;
+  let ready = !!pValueType;
 
   if (variationType === "CNV") {
-    const effectSize = document.querySelector('input[name="effect_size"]:checked')?.value;
-    ready = ready && !!effectSize;
+    // Position: all three fields required
+    const posChecked = document.querySelectorAll(
+      'input[name="col_cnv"]:checked'
+    ).length;
+    const errPosition = document.getElementById("error-cnv-position");
+    if (posChecked < 3) {
+      ready = false;
+      if (errPosition) errPosition.hidden = false;
+    } else {
+      if (errPosition) errPosition.hidden = true;
+    }
+
+    // P-value type required
+    const errPvalue = document.getElementById("error-cnv-pvalue");
+    if (!pValueType) {
+      if (errPvalue) errPvalue.hidden = false;
+    } else {
+      if (errPvalue) errPvalue.hidden = true;
+    }
+
+    // At least one effect size
+    const effectSizes = document.querySelectorAll(
+      'input[name="effect_size"]:checked'
+    );
+    const errEffect = document.getElementById("error-cnv-effect");
+    if (effectSizes.length === 0) {
+      ready = false;
+      if (errEffect) errEffect.hidden = false;
+    } else {
+      if (errEffect) errEffect.hidden = true;
+    }
+
+    // Detailed beta / OR / HR + uncertainty rules
+    const cnvHasSE      = !!document.querySelector('input[name="standard_error"]:checked');
+    const cnvHasCILower = !!document.querySelector('input[name="ci_lower"]:checked');
+    const cnvHasCIUpper = !!document.querySelector('input[name="ci_upper"]:checked');
+    const cnvEffectValues = Array.from(effectSizes).map((el) => el.value);
+    if (validateEffectUncertaintyRules(cnvEffectValues, cnvHasSE, cnvHasCILower, cnvHasCIUpper, "cnv")) {
+      ready = false;
+    }
+
+    // Primary effect size required when >1 selected
+    if (effectSizes.length > 1) {
+      const primary = document.querySelector(
+        'input[name="primary_effect_cnv"]:checked'
+      );
+      if (!primary) ready = false;
+    }
+
+    // Statistical model type required
+    const modelChecked = document.querySelector(
+      'input[name="model_type"]:checked'
+    );
+    const errModel = document.getElementById("error-cnv-model");
+    if (!modelChecked) {
+      ready = false;
+      if (errModel) errModel.hidden = false;
+    } else {
+      if (errModel) errModel.hidden = true;
+    }
+  }
+
+  if (variationType === "GENE") {
+    // Gene name required
+    const geneName = document.querySelector(
+      'input[name="gene_name"]:checked'
+    );
+    const errGeneName = document.getElementById("error-gene-name");
+    if (!geneName) {
+      ready = false;
+      if (errGeneName) errGeneName.hidden = false;
+    } else {
+      if (errGeneName) errGeneName.hidden = true;
+    }
+
+    // P-value type required
+    const errPvalue = document.getElementById("error-gene-pvalue");
+    if (!pValueType) {
+      ready = false;
+      if (errPvalue) errPvalue.hidden = false;
+    } else {
+      if (errPvalue) errPvalue.hidden = true;
+    }
+
+    // Position: if any checked, all three must be checked
+    const posChecked = document.querySelectorAll(
+      'input[name="gene_position"]:checked'
+    ).length;
+    const errGenePosition = document.getElementById("error-gene-position");
+    if (posChecked > 0 && posChecked < 3) {
+      ready = false;
+      if (errGenePosition) errGenePosition.hidden = false;
+    } else {
+      if (errGenePosition) errGenePosition.hidden = true;
+    }
+
+    const effectSizes = document.querySelectorAll(
+      'input[name="gene_effect_size"]:checked'
+    );
+    const geneHasSE      = !!document.querySelector('input[name="gene_uncertainty_estimate"][value="standard_error"]:checked');
+    const geneHasCILower = !!document.querySelector('input[name="gene_uncertainty_estimate"][value="ci_lower"]:checked');
+    const geneHasCIUpper = !!document.querySelector('input[name="gene_uncertainty_estimate"][value="ci_upper"]:checked');
+
+    // Detailed beta / OR / HR + uncertainty rules
+    const geneEffectValues = Array.from(effectSizes).map((el) => el.value);
+    if (validateEffectUncertaintyRules(geneEffectValues, geneHasSE, geneHasCILower, geneHasCIUpper, "gene")) {
+      ready = false;
+    }
+
+    // Primary effect size required when >1 selected
+    if (effectSizes.length > 1) {
+      const primary = document.querySelector(
+        'input[name="primary_effect_gene"]:checked'
+      );
+      if (!primary) ready = false;
+    }
   }
 
   document.getElementById("next-columns").disabled = !ready;
@@ -243,14 +486,25 @@ function populateSummary() {
     beta: "Beta",
     odds_ratio: "Odds ratio",
     z_score: "Z-score",
+    hazard_ratio: "Hazard ratio",
     none: "Not measured",
   };
-  const pLabels = { p_value: "p value", neg_log10: "negative log₁₀ p value" };
+  const pLabels = { p_value: "p value", neg_log10: "negative log\u2081\u2080 p value" };
 
   document.getElementById("summary-variation").textContent =
-    variationLabels[config.variationType] || "—";
-  document.getElementById("summary-effect").textContent =
-    effectLabels[config.effectSize] || "—";
+    variationLabels[config.variationType] || "\u2014";
+
+  // Effect size(s)
+  if (config.effectSizes.length === 0) {
+    document.getElementById("summary-effect").textContent = "Not measured";
+  } else {
+    const labels = config.effectSizes.map((e) => {
+      const label = effectLabels[e] || e;
+      return e === config.primaryEffectSize ? `${label} (primary)` : label;
+    });
+    document.getElementById("summary-effect").textContent = labels.join(", ");
+  }
+
   document.getElementById("summary-pvalue").textContent =
     pLabels[config.pValueType] || "—";
   document.getElementById("summary-zero").textContent =
@@ -507,9 +761,33 @@ document.addEventListener("DOMContentLoaded", () => {
     r.addEventListener("change", handlePValueChange)
   );
   document.querySelectorAll('input[name="zero_pvalues"]').forEach((r) =>
-    r.addEventListener("change", handleZeroPvaluesChange)
+    r.addEventListener("change", handleThresholdChange)
   );
-  document.querySelectorAll('input[name="col_gene_effect"]').forEach((r) =>
+  document.querySelectorAll('input[name="gene_effect_size"]').forEach((r) =>
+    r.addEventListener("change", handleGeneEffectSizeChange)
+  );
+  document.querySelectorAll('input[name="gene_name"]').forEach((r) =>
+    r.addEventListener("change", updateColumnsNextButton)
+  );
+  document.querySelectorAll('input[name="gene_position"]').forEach((r) =>
+    r.addEventListener("change", updateColumnsNextButton)
+  );
+  // Uncertainty estimate checkboxes (gene)
+  document.querySelectorAll('input[name="gene_uncertainty_estimate"]').forEach((r) =>
+    r.addEventListener("change", updateColumnsNextButton)
+  );
+  // Uncertainty estimate checkboxes (CNV)
+  document.querySelectorAll(
+    'input[name="standard_error"], input[name="ci_lower"], input[name="ci_upper"]'
+  ).forEach((r) =>
+    r.addEventListener("change", updateColumnsNextButton)
+  );
+  // Position checkboxes (CNV)
+  document.querySelectorAll('input[name="col_cnv"]').forEach((r) =>
+    r.addEventListener("change", updateColumnsNextButton)
+  );
+  // Statistical model type (CNV)
+  document.querySelectorAll('input[name="model_type"]').forEach((r) =>
     r.addEventListener("change", updateColumnsNextButton)
   );
 
@@ -552,6 +830,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("columns-cnv").hidden = true;
     document.getElementById("columns-placeholder").hidden = false;
     document.querySelectorAll(".wizard-warning").forEach((w) => (w.hidden = true));
+    document.querySelectorAll(".field-error").forEach((e) => (e.hidden = true));
+    document.getElementById("primary-effect-gene").hidden = true;
+    document.getElementById("primary-effect-cnv").hidden = true;
     document.querySelectorAll("[id^='next-']").forEach((b) => (b.disabled = true));
     goToStep(0);
   });

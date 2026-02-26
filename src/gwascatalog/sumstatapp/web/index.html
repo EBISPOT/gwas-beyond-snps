@@ -221,6 +221,15 @@
       margin-bottom: 0.5rem;
     }
 
+    /* ── Inline field errors ─────────────────────────────────── */
+    .field-error {
+      color: #d4351c;
+      font-size: 0.9rem;
+      margin: 0.25rem 0 0.5rem;
+      padding: 0.5rem 0.75rem;
+      border-left: 3px solid #d4351c;
+    }
+
     /* ── Examples panel ────────────────────────────────────────── */
     .examples-panel {
       max-width: 960px;
@@ -427,6 +436,7 @@
         <li class="active">Welcome</li>
         <li>Variation type</li>
         <li>Data checklist</li>
+        <li>P-value options</li>
         <li>Select file</li>
         <li>Validate</li>
       </ol>
@@ -560,8 +570,8 @@
 
           <!-- Required columns -->
           <fieldset>
-            <legend>(Required) Gene name</legend>
-            <p>How are genes named in your data? Please only include one field.</p>
+            <legend>Gene name</legend>
+            <p>How are genes named in your data?</p>
 
             <dl>
               <div>
@@ -586,9 +596,13 @@
             </dl>
           </fieldset>
 
+          <p class="field-error" id="error-gene-name" hidden>
+            Please select how genes are named in your data.
+          </p>
+
           <!-- p-value representation -->
           <fieldset>
-            <legend>(Required) <em>p</em> value representation</legend>
+            <legend><em>p</em> value representation</legend>
             <p>How are <em>p</em> values stored in your file? Please only include one field.</p>
 
             <dl>
@@ -614,9 +628,13 @@
             </dl>
           </fieldset>
 
+          <p class="field-error" id="error-gene-pvalue" hidden>
+            Please select how <em>p</em> values are represented in your data.
+          </p>
+
         <fieldset>
-          <legend>(Optional) Position</legend>
-          <p>How is the position of the gene represented? All fields are required if you include this information.</p>
+          <legend>Position</legend>
+          <p>How is the position of the gene represented?</p>
 
           <dl>
             <div>
@@ -652,10 +670,14 @@
           </dl>
         </fieldset>
 
+          <p class="field-error" id="error-gene-position" hidden>
+            If you include position data, all three fields (chromosome, start, end) are required.
+          </p>
+
           <!-- Effect size (optional) -->
           <fieldset>
             <legend>
-              (Optional) Effect size
+              Effect size
             </legend>
             <p>Measuring effect sizes is optional for gene-based GWAS. The most common choices are beta and odds ratio.</p>
 
@@ -702,11 +724,22 @@
             </dl>
           </fieldset>
 
+          <p class="field-error" id="error-gene-or-hr-conflict" hidden>
+            Odds ratio and hazard ratio cannot both be selected as effect sizes.
+          </p>
+
+          <!-- Primary effect size (shown when >1 effect size selected) -->
+          <fieldset id="primary-effect-gene" hidden>
+            <legend>Primary effect size</legend>
+            <p>You've selected multiple effect sizes. Which is the primary measure of effect for your study?</p>
+            <div id="primary-effect-gene-options"></div>
+          </fieldset>
+
           <!-- Other optional columns -->
           <fieldset>
-            <legend>(Optional) Uncertainty estimate</legend>
+            <legend>Uncertainty estimate</legend>
             <p>If you include an effect size, you must provide an uncertainty estimate.</p>
-            <p>The most common choices are standard error for beta, and confidence intervals for odds ratios and hazard ratios.</p>
+            <p>The most common choices are standard error for beta, and confidence intervals for odds ratios or hazard ratios.</p>
 
             <dl>
               <div>
@@ -741,10 +774,19 @@
             </dl>
           </fieldset>
 
+          <p class="field-error" id="error-gene-beta-uncertainty" hidden>
+            Beta requires standard error. Confidence intervals are not valid for beta.
+          </p>
+          <p class="field-error" id="error-gene-zscore-uncertainty" hidden>
+            Z-score is a standardised statistic and cannot have an associated uncertainty estimate.
+          </p>
+          <p class="field-error" id="error-gene-ci-required" hidden>
+            Both confidence interval bounds (<code>ci_lower</code> and <code>ci_upper</code>) are required when odds ratio or hazard ratio is selected.
+          </p>
 
           <!-- Encouraged fields -->
           <fieldset>
-            <legend>(Optional) Other fields</legend>
+            <legend>Other fields</legend>
             <p>
               Please consider including this data to improve the quality of your submission.
             </p>
@@ -819,10 +861,14 @@
         </dl>
       </fieldset>
 
+      <p class="field-error" id="error-cnv-position" hidden>
+        All position fields (chromosome, start, end) are required.
+      </p>
+
       <!-- Statistical significance -->
       <fieldset>
         <legend>Statistical significance</legend>
-        <p>How are <em>p</em> values stored in your file? Please only include one type.</p>
+        <p>How are <em>p</em> values stored in your file?</p>
 
         <dl>
           <div>
@@ -842,15 +888,18 @@
               <label>
                 <input type="radio" name="p_value_type" value="neg_log10">
                 <code>neg_log10_p_value</code>
-                Larger values indicate greater significance.
               </label>
             </dt>
             <dd>
-              Negative log<sub>10</sub> of the <em>p</em>-value.
+              Negative log<sub>10</sub> of the <em>p</em>-value. Larger values indicate greater significance.
             </dd>
           </div>
         </dl>
       </fieldset>
+
+      <p class="field-error" id="error-cnv-pvalue" hidden>
+        Please select how <em>p</em> values are represented in your data.
+      </p>
 
       <!-- Effect size -->
       <fieldset>
@@ -901,10 +950,25 @@
           </div>
         </dl>
       </fieldset>
+
+      <p class="field-error" id="error-cnv-effect" hidden>
+        At least one effect size must be selected.
+      </p>
+      <p class="field-error" id="error-cnv-or-hr-conflict" hidden>
+        Odds ratio and hazard ratio cannot both be selected as effect sizes.
+      </p>
+
+      <!-- Primary effect size (shown when >1 effect size selected) -->
+      <fieldset id="primary-effect-cnv" hidden>
+        <legend>Primary effect size</legend>
+        <p>You've selected multiple effect sizes. Which is the primary measure of effect for your study?</p>
+        <div id="primary-effect-cnv-options"></div>
+      </fieldset>
+
       <fieldset>
         <legend>Uncertainty estimate</legend>
         <p>
-          How have you measured the uncertainty of your effect size estimates? Standard error is mandatory.
+          How have you measured the uncertainty of your effect size estimates?
         </p>
 
         <dl>
@@ -939,6 +1003,16 @@
           </div>
       </fieldset>
 
+      <p class="field-error" id="error-cnv-beta-uncertainty" hidden>
+        Beta requires standard error. Confidence intervals are not valid for beta.
+      </p>
+      <p class="field-error" id="error-cnv-zscore-uncertainty" hidden>
+        Z-score is a standardised statistic and cannot have an associated uncertainty estimate.
+      </p>
+      <p class="field-error" id="error-cnv-ci-required" hidden>
+        Both confidence interval bounds (<code>confidence_interval_lower</code> and <code>confidence_interval_upper</code>) are required when odds ratio or hazard ratio is selected.
+      </p>
+
       <fieldset>
         <legend>Statistical model information</legend>
         <p>
@@ -956,6 +1030,10 @@
             <dd>Genetic association model type (e.g. additive, dominant, recessive)</dd>
           </div>
       </fieldset>
+
+      <p class="field-error" id="error-cnv-model" hidden>
+        Statistical model type is required.
+      </p>
 
       <!-- Encouraged fields -->
       <fieldset>
@@ -1003,7 +1081,54 @@
       </section>
 
       <!-- ====================================================== -->
-      <!-- Step 6: File picker (standard file input — portable)     -->
+      <!-- Step 4: P-value threshold                                -->
+      <!-- ====================================================== -->
+      <section id="step-threshold" hidden>
+        <h2>Have your <em>p</em>-values been thresholded?</h2>
+
+        <details class="wizard-help">
+          <summary>What does this mean?</summary>
+          <p>
+            Some analysis pipelines truncate very small <em>p</em>-values to
+            zero, or cap them at a minimum representable value.
+            If your data contains zero or truncated <em>p</em>-values,
+            select <strong>Yes</strong> so we can handle them correctly
+            during validation.
+          </p>
+        </details>
+
+        <fieldset>
+          <legend class="vf-u-sr-only">P-value thresholding</legend>
+          <label class="radio-option">
+            <input type="radio" name="zero_pvalues" value="no">
+            No — all <em>p</em>-values in my data are standard (non-zero)
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="zero_pvalues" value="yes">
+            Yes — my data may contain zero or truncated <em>p</em>-values
+          </label>
+        </fieldset>
+
+        <div class="wizard-warning" id="warn-thresholded" hidden role="status">
+          <p>
+            <strong>Note:</strong> Zero <em>p</em>-values will be accepted
+            during validation. Reviewers may follow up with questions about
+            how these values were produced.
+          </p>
+        </div>
+
+        <nav class="wizard-nav">
+          <button type="button" class="vf-button vf-button--secondary" data-action="prev">
+            ← Previous
+          </button>
+          <button type="button" class="vf-button vf-button--primary" id="next-threshold" disabled data-action="next">
+            Next →
+          </button>
+        </nav>
+      </section>
+
+      <!-- ====================================================== -->
+      <!-- Step 5: File picker (standard file input — portable)     -->
       <!-- ====================================================== -->
       <section id="step-file" hidden>
         <h2>Select the file containing your summary statistics</h2>
