@@ -242,7 +242,6 @@ function handleThresholdChange() {
 function showColumnsFor(type) {
   document.getElementById("columns-gene").hidden = type !== "GENE";
   document.getElementById("columns-cnv").hidden = type !== "CNV";
-  document.getElementById("columns-placeholder").hidden = !!type;
   updateColumnsNextButton();
 }
 
@@ -323,6 +322,11 @@ function updateColumnsNextButton() {
   const pValueType = document.querySelector(
     'input[name="p_value_type"]:checked'
   )?.value;
+
+  if (variationType !== "CNV" && variationType !== "GENE") {
+    document.getElementById("next-columns").disabled = true;
+    return;
+  }
 
   let ready = !!pValueType;
 

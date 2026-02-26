@@ -571,6 +571,19 @@
           </p>
         </details>
 
+        <p>
+          This checklist describes the fields (column names) that should be present
+          in your summary statistics table.
+        </p>
+        <p>
+          If you're not sure what to put in each field, please download the example
+          file from <a href="static/examples/valid-cnv.csv">here</a> and adapt it to your data.
+        </p>
+        <p>
+          Column names <code>look like this</code>. Column names must appear exactly as shown below.
+          Any differences or typos in your files will cause validation errors.
+        </p>
+
         <div class="columns-checklist">
 
         <!-- ── Gene-based columns (shown when variation_type = GENE) ── -->
@@ -822,19 +835,6 @@
 
     <!-- ── CNV columns (shown when variation_type = CNV) ── -->
     <section id="columns-cnv" hidden>
-      <p>
-        This checklist describes the fields (column names) that should be present
-        in your summary statistics table.
-      </p>
-      <p>
-        If you're not sure what to put in each field, please download the example
-        file from <a href="static/examples/valid-cnv.csv">here</a> and adapt it to your data.
-      </p>
-      <p>
-        Column names <code>look like this</code>. Column names must appear exactly as shown below.
-        Any differences or typos in your files will cause validation errors.
-      </p>
-
       <!-- Required columns -->
       <fieldset>
         <legend>Position</legend>
@@ -1074,13 +1074,6 @@
       </fieldset>
 
     </section>
-          <!-- Placeholder when no variation type selected yet -->
-          <div id="columns-placeholder">
-            <p style="color:#707372;font-style:italic;margin:1rem 0;">
-              Please go back and select a variation type first.
-            </p>
-          </div>
-
         </div>
 
         <nav class="wizard-nav">
