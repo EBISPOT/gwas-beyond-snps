@@ -732,6 +732,7 @@
           <fieldset id="primary-effect-gene" hidden>
             <legend>Primary effect size</legend>
             <p>You've selected multiple effect sizes. Which is the primary measure of effect for your study?</p>
+            <p>(The primary measure of effect will be put in a standardised column index in the output file.)</p>
             <div id="primary-effect-gene-options"></div>
           </fieldset>
 
@@ -775,13 +776,13 @@
           </fieldset>
 
           <p class="field-error" id="error-gene-beta-uncertainty" hidden>
-            Beta requires standard error. Confidence intervals are not valid for beta.
+            Standard error is only valid for beta, and beta requires a standard error.
           </p>
           <p class="field-error" id="error-gene-zscore-uncertainty" hidden>
             Z-score is a standardised statistic and cannot have an associated uncertainty estimate.
           </p>
           <p class="field-error" id="error-gene-ci-required" hidden>
-            Both confidence interval bounds (<code>ci_lower</code> and <code>ci_upper</code>) are required when odds ratio or hazard ratio is selected.
+            Confidence intervals are only valid for odds ratio or hazard ratio. Both bounds must be provided if one is given.
           </p>
 
           <!-- Encouraged fields -->
@@ -979,7 +980,7 @@
                 <code>standard_error</code>
               </label>
             </dt>
-            <dd>Standard error (always required).</dd>
+            <dd>Standard error.</dd>
           </div>
 
         <div>
@@ -1004,13 +1005,13 @@
       </fieldset>
 
       <p class="field-error" id="error-cnv-beta-uncertainty" hidden>
-        Beta requires standard error. Confidence intervals are not valid for beta.
+        Standard error is only valid for beta, and beta requires a standard error.
       </p>
       <p class="field-error" id="error-cnv-zscore-uncertainty" hidden>
         Z-score is a standardised statistic and cannot have an associated uncertainty estimate.
       </p>
       <p class="field-error" id="error-cnv-ci-required" hidden>
-        Both confidence interval bounds (<code>confidence_interval_lower</code> and <code>confidence_interval_upper</code>) are required when odds ratio or hazard ratio is selected.
+        Confidence intervals are only valid for odds ratio or hazard ratio. Both bounds must be provided if one is given.
       </p>
 
       <fieldset>

@@ -251,49 +251,55 @@ function showColumnsFor(type) {
  * error messages. Returns true if any blocking error is present.
  *
  * Rules:
- *   - beta  →  standard_error required; CI fields invalid
- *   - z_score  →  no uncertainty estimate valid
- *   - odds_ratio or hazard_ratio  →  both CI bounds required
- *   - odds_ratio + hazard_ratio together  →  conflict error
+ *   1. beta             → standard_error required
+ *   2. CI               → valid only for odds_ratio / hazard_ratio; not required,
+ *                         but both bounds must be provided if one is
+ *   3. z_score          → no uncertainty estimate valid; suppressed when z-score
+ *                         is not the primary effect size
+ *   4. odds_ratio + hazard_ratio together → conflict error
  *
- * @param {string[]} effectValues - selected effect size values
- * @param {boolean}  hasSE        - standard_error is checked
- * @param {boolean}  hasCILower   - ci_lower is checked
- * @param {boolean}  hasCIUpper   - ci_upper is checked
- * @param {string}   prefix       - "gene" or "cnv"
+ * @param {string[]} effectValues      - selected effect size values
+ * @param {boolean}  hasSE             - standard_error is checked
+ * @param {boolean}  hasCILower        - ci_lower is checked
+ * @param {boolean}  hasCIUpper        - ci_upper is checked
+ * @param {string}   primaryEffectSize - the primary (or only) effect size value
+ * @param {string}   prefix            - "gene" or "cnv"
  */
-function validateEffectUncertaintyRules(effectValues, hasSE, hasCILower, hasCIUpper, prefix) {
+function validateEffectUncertaintyRules(effectValues, hasSE, hasCILower, hasCIUpper, primaryEffectSize, prefix) {
   let hasError = false;
   const hasBeta   = effectValues.includes("beta");
   const hasOR     = effectValues.includes("odds_ratio");
   const hasHR     = effectValues.includes("hazard_ratio");
   const hasZScore = effectValues.includes("z_score");
-  const hasAnyUncertainty = hasSE || hasCILower || hasCIUpper;
 
-  // Beta: SE required; CI invalid
-  const errBeta = document.getElementById(`error-${prefix}-beta-uncertainty`);
-  const betaError = hasBeta && (!hasSE || hasCILower || hasCIUpper);
-  if (errBeta) errBeta.hidden = !betaError;
-  if (betaError) hasError = true;
-
-  // Z-score: no uncertainty estimate valid
-  const errZScore = document.getElementById(`error-${prefix}-zscore-uncertainty`);
-  const zScoreError = hasZScore && hasAnyUncertainty;
-  if (errZScore) errZScore.hidden = !zScoreError;
-  if (zScoreError) hasError = true;
-
-  // OR and HR cannot both be selected
+  // Rule 4: OR and HR cannot both be selected
   const errConflict = document.getElementById(`error-${prefix}-or-hr-conflict`);
   const orHrConflict = hasOR && hasHR;
   if (errConflict) errConflict.hidden = !orHrConflict;
   if (orHrConflict) hasError = true;
 
-  // OR or HR (but not both) requires both CI bounds
+  // Rule 1: Beta requires standard error; standard error is only valid for beta
+  const errBeta = document.getElementById(`error-${prefix}-beta-uncertainty`);
+  const betaError = (hasBeta && !hasSE) || (!hasBeta && hasSE);
+  if (errBeta) errBeta.hidden = !betaError;
+  if (betaError) hasError = true;
+
+  // Rule 3: Z-score cannot have an uncertainty estimate.
+  // Suppress when z-score is not the primary effect size (uncertainty belongs to another effect).
+  const errZScore = document.getElementById(`error-${prefix}-zscore-uncertainty`);
+  const zScoreIsEffective = hasZScore && (effectValues.length === 1 || primaryEffectSize === "z_score");
+  const hasAnyUncertainty = hasSE || hasCILower || hasCIUpper;
+  const zScoreError = zScoreIsEffective && hasAnyUncertainty;
+  if (errZScore) errZScore.hidden = !zScoreError;
+  if (zScoreError) hasError = true;
+
+  // Rule 2: CI is valid only for OR/HR; not required, but both bounds must be provided if one is
   const errCI = document.getElementById(`error-${prefix}-ci-required`);
-  const needsCI = (hasOR || hasHR) && !orHrConflict;
-  const ciIncomplete = needsCI && (!hasCILower || !hasCIUpper);
-  if (errCI) errCI.hidden = !ciIncomplete;
-  if (ciIncomplete) hasError = true;
+  const ciInvalid = (hasCILower || hasCIUpper) && !(hasOR || hasHR) && !orHrConflict;
+  const ciPartial = (hasCILower || hasCIUpper) && !(hasCILower && hasCIUpper);
+  const ciError = ciInvalid || ciPartial;
+  if (errCI) errCI.hidden = !ciError;
+  if (ciError) hasError = true;
 
   return hasError;
 }
@@ -304,9 +310,9 @@ function validateEffectUncertaintyRules(effectValues, hasSE, hasCILower, hasCIUp
  * Rules:
  *   - p-value type must be selected (both Gene and CNV)
  *   - CNV: at least one effect size must be selected
- *   - If any effect size is selected, at least one uncertainty estimate is required
  *   - If >1 effect size is selected, a primary must be chosen
  *   - Gene: gene name must be selected
+ *   - Effect size / uncertainty rules delegated to validateEffectUncertaintyRules
  *
  * Inline error messages are shown / hidden to guide the user.
  */
@@ -358,7 +364,9 @@ function updateColumnsNextButton() {
     const cnvHasCILower = !!document.querySelector('input[name="ci_lower"]:checked');
     const cnvHasCIUpper = !!document.querySelector('input[name="ci_upper"]:checked');
     const cnvEffectValues = Array.from(effectSizes).map((el) => el.value);
-    if (validateEffectUncertaintyRules(cnvEffectValues, cnvHasSE, cnvHasCILower, cnvHasCIUpper, "cnv")) {
+    const cnvPrimary = document.querySelector('input[name="primary_effect_cnv"]:checked')?.value
+      || (effectSizes.length === 1 ? effectSizes[0].value : null);
+    if (validateEffectUncertaintyRules(cnvEffectValues, cnvHasSE, cnvHasCILower, cnvHasCIUpper, cnvPrimary, "cnv")) {
       ready = false;
     }
 
@@ -426,7 +434,9 @@ function updateColumnsNextButton() {
 
     // Detailed beta / OR / HR + uncertainty rules
     const geneEffectValues = Array.from(effectSizes).map((el) => el.value);
-    if (validateEffectUncertaintyRules(geneEffectValues, geneHasSE, geneHasCILower, geneHasCIUpper, "gene")) {
+    const genePrimary = document.querySelector('input[name="primary_effect_gene"]:checked')?.value
+      || (effectSizes.length === 1 ? effectSizes[0].value : null);
+    if (validateEffectUncertaintyRules(geneEffectValues, geneHasSE, geneHasCILower, geneHasCIUpper, genePrimary, "gene")) {
       ready = false;
     }
 
