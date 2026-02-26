@@ -221,6 +221,15 @@
       margin-bottom: 0.5rem;
     }
 
+    /* ── Column name / description hierarchy ────────────────── */
+    .columns-checklist dl dt code {
+      font-size: 1rem;
+    }
+    .columns-checklist dl dd {
+      font-size: 0.85rem;
+      color: #707372;
+    }
+
     /* ── Inline field errors ─────────────────────────────────── */
     .field-error {
       color: #d4351c;
@@ -820,6 +829,10 @@
       <p>
         If you're not sure what to put in each field, please download the example
         file from <a href="static/examples/valid-cnv.csv">here</a> and adapt it to your data.
+      </p>
+      <p>
+        Column names <code>look like this</code>. Column names must appear exactly as shown below.
+        Any differences or typos in your files will cause validation errors.
       </p>
 
       <!-- Required columns -->
