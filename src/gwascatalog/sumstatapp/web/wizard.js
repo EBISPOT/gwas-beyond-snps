@@ -24,9 +24,7 @@
 const STEPS = [
   "welcome",
   "variation",
-  "effect-size",
-  "p-value",
-  "significance",
+  "columns",
   "file",
   "validate",
 ];
@@ -86,10 +84,21 @@ function updateProgress() {
 
 function readConfig() {
   const data = new FormData(document.getElementById("wizard"));
+  const variationType = data.get("variation_type");
+
+  // Gather effect size — radio for CNV, checkboxes for gene
+  let effectSize;
+  if (variationType === "CNV") {
+    effectSize = data.get("effect_size") || "none";
+  } else {
+    const checked = data.getAll("col_gene_effect");
+    effectSize = checked.length > 0 ? checked[0] : "none";
+  }
+
   return {
-    variationType: data.get("variation_type"),
+    variationType,
     assembly: data.get("assembly"),
-    effectSize: data.get("effect_size"),
+    effectSize,
     pValueType: data.get("p_value_type"),
     allowZeroPvalues: data.get("zero_pvalues") === "yes",
   };
@@ -121,8 +130,12 @@ function handleVariationChange() {
   if (value === "CNV") {
     document.getElementById("assembly-group").hidden = false;
     nextBtn.disabled = !document.getElementById("assembly").value;
+    // Update columns page
+    showColumnsFor("CNV");
     return;
   }
+  // GENE
+  showColumnsFor("GENE");
   nextBtn.disabled = false;
 }
 
@@ -137,23 +150,53 @@ function handleAssemblyChange() {
 }
 
 function handleEffectSizeChange() {
-  const value = document.querySelector(
-    'input[name="effect_size"]:checked'
-  )?.value;
-  document.getElementById("warn-no-effect-size").hidden = value !== "none";
-  document.getElementById("next-effect").disabled = false;
+  updateColumnsNextButton();
 }
 
 function handlePValueChange() {
-  document.getElementById("next-pvalue").disabled = false;
+  updateColumnsNextButton();
 }
 
 function handleZeroPvaluesChange() {
   const value = document.querySelector(
     'input[name="zero_pvalues"]:checked'
   )?.value;
-  document.getElementById("warn-thresholded").hidden = value !== "yes";
-  document.getElementById("next-significance").disabled = false;
+  // Show warning in whichever panel is visible
+  const geneWarn = document.getElementById("warn-thresholded-gene");
+  const cnvWarn = document.getElementById("warn-thresholded-cnv");
+  if (geneWarn) geneWarn.hidden = value !== "yes";
+  if (cnvWarn) cnvWarn.hidden = value !== "yes";
+  updateColumnsNextButton();
+}
+
+// ── Columns checklist logic ──────────────────────────────────────
+
+/** Show the correct column checklist based on variation type. */
+function showColumnsFor(type) {
+  document.getElementById("columns-gene").hidden = type !== "GENE";
+  document.getElementById("columns-cnv").hidden = type !== "CNV";
+  document.getElementById("columns-placeholder").hidden = !!type;
+  updateColumnsNextButton();
+}
+
+/**
+ * Enable / disable the Next button on the columns step.
+ * Requires: p-value type selected AND zero-pvalues answered.
+ * For CNV: also requires effect size selected.
+ */
+function updateColumnsNextButton() {
+  const pValueType = document.querySelector('input[name="p_value_type"]:checked')?.value;
+  const zeroPvalues = document.querySelector('input[name="zero_pvalues"]:checked')?.value;
+  const variationType = document.querySelector('input[name="variation_type"]:checked')?.value;
+
+  let ready = !!pValueType && !!zeroPvalues;
+
+  if (variationType === "CNV") {
+    const effectSize = document.querySelector('input[name="effect_size"]:checked')?.value;
+    ready = ready && !!effectSize;
+  }
+
+  document.getElementById("next-columns").disabled = !ready;
 }
 
 // ── File handling ────────────────────────────────────────────────
@@ -466,6 +509,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll('input[name="zero_pvalues"]').forEach((r) =>
     r.addEventListener("change", handleZeroPvaluesChange)
   );
+  document.querySelectorAll('input[name="col_gene_effect"]').forEach((r) =>
+    r.addEventListener("change", updateColumnsNextButton)
+  );
 
   // Example file panel
   document
@@ -502,6 +548,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("validation-output").hidden = true;
     document.getElementById("file-info").hidden = true;
     document.getElementById("assembly-group").hidden = true;
+    document.getElementById("columns-gene").hidden = true;
+    document.getElementById("columns-cnv").hidden = true;
+    document.getElementById("columns-placeholder").hidden = false;
     document.querySelectorAll(".wizard-warning").forEach((w) => (w.hidden = true));
     document.querySelectorAll("[id^='next-']").forEach((b) => (b.disabled = true));
     goToStep(0);
