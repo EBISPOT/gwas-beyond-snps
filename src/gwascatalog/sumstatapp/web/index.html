@@ -362,10 +362,10 @@
   <section class="vf-hero vf-hero--800 | vf-u-fullbleed">
     <div class="vf-hero__content | vf-box | vf-stack vf-stack--400">
       <h2 class="vf-hero__heading">
-        GWAS Catalog Summary Statistics Submission Tool
+        Not-SNPs Submission Tool
       </h2>
       <p class="vf-hero__subheading">
-        Prepare your data for submission to the GWAS Catalog
+        Prepare your gene-based or Copy Number Variant summary statistics for submission to the GWAS Catalog
       </p>
     </div>
   </section>
@@ -436,7 +436,7 @@
         <li class="active">Welcome</li>
         <li>Variation type</li>
         <li>Data checklist</li>
-        <li>P-value options</li>
+        <li>Thresholding</li>
         <li>Select file</li>
         <li>Validate</li>
       </ol>
@@ -445,7 +445,7 @@
       <!-- Step 1: Welcome                                         -->
       <!-- ====================================================== -->
       <section id="step-welcome">
-        <h2>Welcome to the GWAS Catalog summary statistics tool</h2>
+        <h2>Welcome to the Not-SNPs Submission Tool</h2>
         <p>
           This tool will check your summary statistics files contain valid data
           and automatically prepare them for submission.
@@ -515,7 +515,7 @@
 
         <div class="wizard-warning" id="warn-other" hidden role="status">
           <p>
-            Only SNP-based, CNV-based, and gene-based genome-wide studies are
+            Only SNP, CNV, and gene-based genome-wide studies are
             currently validated by the GWAS Catalog.
           </p>
           <p>
@@ -528,7 +528,6 @@
         <div id="assembly-group" hidden>
           <label for="assembly"><strong>Genome assembly:</strong></label>
           <p>What reference genome were your variants called against?</p>
-          <p>Please contact <a href="mailto:gwas-subs@ebi.ac.uk">gwas-subs@ebi.ac.uk</a> if you're not sure.</p>
           <select id="assembly" name="assembly" class="vf-form__select">
             <option value="">— Select assembly —</option>
             <option value="GRCh38">GRCh38</option>
@@ -1085,36 +1084,39 @@
       <!-- Step 4: P-value threshold                                -->
       <!-- ====================================================== -->
       <section id="step-threshold" hidden>
-        <h2>Have your <em>p</em>-values been thresholded?</h2>
+        <h2>Are highly significant <em>p</em> values thresholded or rounded to zero?</h2>
 
         <details class="wizard-help">
-          <summary>What does this mean?</summary>
+          <summary>Why do we ask this?</summary>
           <p>
-            Some analysis pipelines truncate very small <em>p</em>-values to
-            zero, or cap them at a minimum representable value.
-            If your data contains zero or truncated <em>p</em>-values,
-            select <strong>Yes</strong> so we can handle them correctly
-            during validation.
+            Thresholding or rounding <em>p</em> values limits the downstream
+            usability of the data.
+          </p>
+          <p>
+            If your data includes <em>p</em> values thresholded or rounded to zero, please provide negative log₁₀ <em>p</em> values instead.
           </p>
         </details>
 
         <fieldset>
-          <legend class="vf-u-sr-only">P-value thresholding</legend>
+          <legend class="vf-u-sr-only">Are p-values thresholded?</legend>
           <label class="radio-option">
             <input type="radio" name="zero_pvalues" value="no">
-            No — all <em>p</em>-values in my data are standard (non-zero)
+            No
           </label>
           <label class="radio-option">
             <input type="radio" name="zero_pvalues" value="yes">
-            Yes — my data may contain zero or truncated <em>p</em>-values
+            Yes
           </label>
         </fieldset>
 
         <div class="wizard-warning" id="warn-thresholded" hidden role="status">
           <p>
-            <strong>Note:</strong> Zero <em>p</em>-values will be accepted
-            during validation. Reviewers may follow up with questions about
-            how these values were produced.
+            If your data includes <em>p</em> values thresholded or rounded to
+            zero, please provide negative log₁₀ <em>p</em> values instead.
+          </p>
+          <p>
+            If this isn't possible, you will be asked to include more details
+            about the GWAS software that you used in the study metadata when you submit.
           </p>
         </div>
 
@@ -1186,10 +1188,6 @@
           <div>
             <dt>Effect size</dt>
             <dd id="summary-effect">—</dd>
-          </div>
-          <div>
-            <dt>Optional columns</dt>
-            <dd id="summary-optional">—</dd>
           </div>
           <div id="summary-assembly-row" hidden>
             <dt>Genome assembly</dt>
