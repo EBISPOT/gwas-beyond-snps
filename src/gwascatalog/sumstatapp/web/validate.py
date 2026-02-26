@@ -22,10 +22,7 @@ Interface:
 
 from __future__ import annotations
 
-import contextlib
-import gzip
 import hashlib
-import io
 import json
 import logging
 import time
@@ -97,7 +94,6 @@ def _post_progress(
 # ── Validation helpers ────────────────────────────────────────────
 
 
-
 def _get_model_class(
     variation_type: str,
 ) -> type[CNVSumstatModel] | type[GeneSumstatModel]:
@@ -124,19 +120,14 @@ def _get_validation_context(config: WizardConfig) -> SumstatConfig:
             if not assembly:
                 raise ValueError("Genome assembly is required for CNV data")
             context["assembly"] = assembly
-        case "GENE":
-            effect = config.get("effectSize")
-            context["primary_effect_size"] = (
-                effect if effect and effect != "none" else "beta"
-            )
 
+    context["primary_effect_size"] = config.get("primaryEffectSize", None)
     return SumstatConfig(**context)
 
 
 class WizardConfig(TypedDict):
     variationType: Literal["CNV", "GENE"]
-    effectSize: Literal["none", "beta", "hazard_ratio", "odds_ratio"]
-    pValueType: Literal["pvalue", "neg_log10_p_value"]
+    primaryEffectSize: Literal["beta", "hazard_ratio", "odds_ratio"] | None
     allowZeroPvalues: bool
     assembly: str
 
@@ -207,8 +198,7 @@ def validate_file(config_json: str) -> str:
         # Transform errors: SumstatError uses 'msg' key, but the JS
         # front-end expects 'message'.
         errors_for_display = [
-            {"row": e["row"], "message": e["msg"]}
-            for e in sumstat_table.errors
+            {"row": e["row"], "message": e["msg"]} for e in sumstat_table.errors
         ]
 
         return json.dumps(

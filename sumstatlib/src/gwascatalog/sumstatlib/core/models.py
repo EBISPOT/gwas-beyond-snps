@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING, Annotated, Literal, Self
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Self
 
 from gwascatalog.sumstatlib._pydantic import (
     AliasChoices,
     BaseModel,
     ConfigDict,
     Field,
+    PrivateAttr,
     model_validator,
 )
 from gwascatalog.sumstatlib.core.sumstat_types import (
@@ -133,6 +134,20 @@ class BaseSumstatModel(BaseModel, abc.ABC):
             default=None, validation_alias=AliasChoices("n"), serialization_alias="n"
         ),
     ]
+
+    # private attributes to avoid polluting the data model
+    # adopting this pattern because metadata are provided by a payload or CLI flag at
+    # runtime, so adding a field doesn't make sense
+    _primary_effect_size: (
+        Literal["beta", "z_score", "hazard_ratio", "odds_ratio"] | None
+    ) = PrivateAttr()
+
+    def model_post_init(self, context: Any, /) -> None:
+        if "primary_effect_size" not in context:
+            raise ValueError(
+                "primary_effect_size must be provided via validation context"
+            )
+        self._primary_effect_size = context["primary_effect_size"]
 
     @property
     def effect_size_values(self) -> list[float | None]:

@@ -5,7 +5,7 @@ import gzip
 import logging
 from functools import cached_property
 from pathlib import Path
-from typing import IO, TYPE_CHECKING, NamedTuple, Self, TypedDict
+from typing import IO, TYPE_CHECKING, Literal, NamedTuple, Self, TypedDict
 
 from gwascatalog.sumstatlib._pydantic import ValidationError
 
@@ -28,6 +28,7 @@ class SumstatConfig(TypedDict):
 
     allow_zero_p_values: bool
     assembly: GenomeAssembly
+    primary_effect_size: Literal["beta", "odds_ratio", "hazard_ratio", "z_score"] | None
 
 
 class SumstatError(TypedDict):
@@ -121,14 +122,16 @@ class SumstatTable:
         first_row = next(self.parse_csv())
         try:
             instance = self._data_model.model_validate(first_row, context=self._config)
-        except ValidationError:
+        except ValidationError as e:
+            logger.critical(f"First row of {self._path.name} failed validation")
+            logger.critical(f"{ValidationError}")
             msg = (
                 f"The first row of {self._path.name} failed validation. "
                 "This usually means the file has missing or incorrectly "
                 "named columns. Valid column names include: "
                 f"{self.data_model.VALID_FIELD_NAMES}"
             )
-            raise ValueError(msg)
+            raise ValueError(msg) from e
 
         present = list(instance.model_dump(exclude_none=True).keys())
         field_map = self._data_model.FIELD_MAP

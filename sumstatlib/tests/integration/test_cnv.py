@@ -25,6 +25,7 @@ def test_validated_cnv(tmp_path, cnv_file):
     config = SumstatConfig(
         assembly=GenomeAssembly.GRCH38,
         allow_zero_p_values=False,
+        primary_effect_size="beta",
     )
     table = SumstatTable(
         config=config, input_path=cnv_file, data_model=CNVSumstatModel, min_records=5

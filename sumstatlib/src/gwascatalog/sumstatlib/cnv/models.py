@@ -93,6 +93,9 @@ class CNVSumstatModel(BaseSumstatModel):
     _assembly: GenomeAssembly = PrivateAttr()
 
     def model_post_init(self, context: Any) -> None:
+        # provided primary effect size context
+        super().model_post_init(context)
+
         if "assembly" not in context:
             raise ValueError("genome assembly must be provided via validation context")
 

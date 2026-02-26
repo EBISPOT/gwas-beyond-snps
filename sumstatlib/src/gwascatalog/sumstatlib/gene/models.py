@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated, ClassVar, Self, final
+from typing import TYPE_CHECKING, Annotated, Any, ClassVar, Self, final
 
 from gwascatalog.sumstatlib._pydantic import (
     AliasChoices,
@@ -88,6 +88,10 @@ class GeneSumstatModel(BaseSumstatModel):
         ),
     ]
 
+    def model_post_init(self, context: Any) -> None:
+        # provided primary effect size context
+        super().model_post_init(context)
+
     def validate_semantics(self):
         raise NotImplementedError
 
@@ -118,23 +122,9 @@ class GeneSumstatModel(BaseSumstatModel):
         match (self.ensembl_gene_id, self.hgnc_symbol):
             case (None, None):
                 raise ValueError("Missing ensembl_gene_id or hgnc_symbol")
+            case (str(), str()):
+                raise ValueError(
+                    "Only one of ensembl_gene_id or hgnc_symbol may be set"
+                )
             case _:
                 return self
-
-    @property
-    def effect_size(self) -> float | None:
-        effect_size = None
-        if self.odds_ratio is not None:
-            effect_size = self.odds_ratio
-        elif self.beta is not None:
-            effect_size = self.beta
-        elif self.z_score is not None:
-            effect_size = self.z_score
-
-        return effect_size
-
-    @property
-    def has_confidence_intervals(self) -> bool:
-        return (self.confidence_interval_lower is not None) or (
-            self.confidence_interval_upper is not None
-        )

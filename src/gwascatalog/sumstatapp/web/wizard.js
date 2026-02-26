@@ -556,7 +556,18 @@ async function validateFile() {
 
     showLoading(LOADING_MESSAGE);
     const config = readConfig();
-    const configJson = JSON.stringify(config);
+    // Build a config object matching Python's WizardConfig TypedDict exactly.
+    // Only include the fields Python expects; map "none" sentinel → null.
+    const pythonConfig = {
+      variationType: config.variationType,
+      primaryEffectSize:
+        config.primaryEffectSize && config.primaryEffectSize !== "none"
+          ? config.primaryEffectSize
+          : null,
+      allowZeroPvalues: config.allowZeroPvalues,
+      assembly: config.assembly || null,
+    };
+    const configJson = JSON.stringify(pythonConfig);
 
     const resultJson = await callWorker("validate", { configJson });
     const result = JSON.parse(resultJson);
