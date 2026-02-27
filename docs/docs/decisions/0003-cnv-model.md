@@ -13,7 +13,7 @@ Catalog.
 
 There are no standard schemas or recommended data formats for authors. Data are
 submitted and only hosted on the GWAS Catalog FTP without any ingest processes,
-e.g. <https://www.ebi.ac.uk/gwas/publications/36779085>
+e.g. https://www.ebi.ac.uk/gwas/publications/36779085
 
 CNV submissions are becoming more common from 2025, and we need a way to model
 and ingest this data so it can be queried, validated, and integrated alongside
