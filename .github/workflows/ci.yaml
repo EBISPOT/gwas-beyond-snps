@@ -30,7 +30,7 @@ jobs:
           enable-cache: true
 
       - name: Install nox
-        run: uv pip install nox
+        run: uv venv && uv pip install nox
 
       - name: Run Nox (fail fast)
         run: nox
