@@ -5,6 +5,7 @@ from gwascatalog.sumstatlib.cnv.models import CNVSumstatModel
 
 # these test cases only cover model specific validation
 
+validation_context = {"assembly": "GRCh38", "primary_effect_size": "beta", "allow_zero_p_values": False}
 test_cases = [
     # Valid input
     (
@@ -16,8 +17,10 @@ test_cases = [
             "p_value": 0.2,
             "model_type": "additive",
             "n": 2,
+            "beta": 0.1,
+            "standard_error": 0.01,
         },
-        {"assembly": "GRCh38"},
+        validation_context,
         None,
     ),
     # base_pair_end < base_pair_start
@@ -30,11 +33,13 @@ test_cases = [
             "p_value": 0.2,
             "model_type": "additive",
             "n": 2,
+            "beta": 0.1,
+            "standard_error": 0.01,
         },
-        {"assembly": "GRCh38"},
+        validation_context,
         "base_pair_end must be greater than base_pair_start",
     ),
-    # missing context
+    # missing primary effect size context
     (
         {
             "chromosome": "X",
@@ -44,9 +49,99 @@ test_cases = [
             "p_value": 0.2,
             "model_type": "additive",
             "n": 2,
+            "beta": 0.1,
+            "standard_error": 0.01,
         },
         {},
-        "genome assembly must be provided via validation context",
+        "primary_effect_size must be provided via validation context",
+    ),
+    # missing assembly context
+    (
+        {
+            "chromosome": "X",
+            "base_pair_start": 1000,
+            "base_pair_end": 1,
+            "effect_direction": "positive",
+            "p_value": 0.2,
+            "model_type": "additive",
+            "n": 2,
+            "beta": 0.1,
+            "standard_error": 0.01,
+        },
+        {"primary_effect_size": "beta"},
+        "genome_assembly must be provided via validation context",
+    ),
+    # primary effect size is set but missing
+    (
+        {
+            "chromosome": "X",
+            "base_pair_start": 1000,
+            "base_pair_end": 1,
+            "effect_direction": "positive",
+            "p_value": 0.2,
+            "model_type": "additive",
+            "n": 2,
+            "odds_ratio": 0.1,
+            "confidence_interval_upper": 0.2,
+            "confidence_interval_lower": 0.0,
+        },
+        {"primary_effect_size": "beta", "assembly": "GRCh38"},
+        "Primary effect size beta must not be None",
+    ),
+    # standard error requires beta
+    (
+        {
+            "chromosome": "X",
+            "base_pair_start": 1000,
+            "base_pair_end": 1,
+            "effect_direction": "positive",
+            "p_value": 0.2,
+            "model_type": "additive",
+            "n": 2,
+            "odds_ratio": 0.1,
+            "confidence_interval_upper": 0.2,
+            "confidence_interval_lower": 0.0,
+            "standard_error": 0.0
+        },
+        {"primary_effect_size": "beta", "assembly": "GRCh38"},
+        "Standard error requires beta to be set",
+    ),
+    # CI requires odds ratio
+    (
+        {
+            "chromosome": "X",
+            "base_pair_start": 1000,
+            "base_pair_end": 1,
+            "effect_direction": "positive",
+            "p_value": 0.2,
+            "model_type": "additive",
+            "n": 2,
+            "beta": 0.1,
+            "standard_error": 0.01,
+            "confidence_interval_upper": 0.2,
+            "confidence_interval_lower": 0.0,
+        },
+        {"primary_effect_size": "beta", "assembly": "GRCh38"},
+        "Confidence interval provided but no odds ratio present",
+    ),
+    # bad CI bounds
+    (
+        {
+            "chromosome": "X",
+            "base_pair_start": 1000,
+            "base_pair_end": 1,
+            "effect_direction": "positive",
+            "p_value": 0.2,
+            "model_type": "additive",
+            "n": 2,
+            "beta": 0.1,
+            "standard_error": 0.01,
+            "odds_ratio": 0.001,
+            "confidence_interval_upper": 0.2,
+            "confidence_interval_lower": 0.1,
+        },
+        {"primary_effect_size": "beta", "assembly": "GRCh38"},
+        "Effect size must lie within the confidence interval",
     ),
 ]
 

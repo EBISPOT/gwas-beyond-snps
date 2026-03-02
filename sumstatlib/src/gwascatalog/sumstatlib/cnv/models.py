@@ -80,13 +80,6 @@ class CNVSumstatModel(BaseSumstatModel):
         ),
     ]
 
-    n: Annotated[
-        SampleSizePerVariant | None,
-        Field(
-            default=None, validation_alias=AliasChoices("n"), serialization_alias="n"
-        ),
-    ]
-
     # private attributes to avoid polluting the data model
     # adopting this pattern because metadata are provided by a payload or CLI flag at
     # runtime, so adding a field doesn't make sense
@@ -97,7 +90,7 @@ class CNVSumstatModel(BaseSumstatModel):
         super().model_post_init(context)
 
         if "assembly" not in context:
-            raise ValueError("genome assembly must be provided via validation context")
+            raise ValueError("genome_assembly must be provided via validation context")
 
         self._assembly = GenomeAssembly(context["assembly"])
 
@@ -110,30 +103,15 @@ class CNVSumstatModel(BaseSumstatModel):
     def cnv_length(self) -> int:
         return self.base_pair_end - self.base_pair_start
 
-    @computed_field
-    @property
-    def effect_direction(self) -> EffectDirection:
-        effect_size = self.effect_size
-        if effect_size is None:
-            raise ValueError("effect_size must not be None for CNVs")
+    @model_validator(mode="after")
+    def effect_size_is_mandatory(self) -> Self:
+        """Check that an effect size is provided """
+        count = sum(v is not None for v in [self.beta, self.odds_ratio, self.z_score, self.hazard_ratio])
 
-        # Signed metrics (zero-centered)
-        if self.effect_size_type in {"beta", "z_score"}:
-            if effect_size > 0:
-                return EffectDirection.POSITIVE
-            if effect_size < 0:
-                return EffectDirection.NEGATIVE
-            return EffectDirection.AMBIGUOUS
+        if count == 0:
+            raise ValueError("At least one of odds_ratio, beta, z_score, or hazard_ratio must be set")
 
-        # Ratio metrics (one-centered)
-        if self.effect_size_type in {"odds_ratio", "hazard_ratio"}:
-            if effect_size > 1:
-                return EffectDirection.POSITIVE
-            if effect_size < 1:
-                return EffectDirection.NEGATIVE
-            return EffectDirection.AMBIGUOUS
-
-        raise ValueError(f"Invalid effect_size_type: {self.effect_size_type}")
+        return self
 
     @model_validator(mode="after")
     def validate_location(self) -> Self:
@@ -145,11 +123,10 @@ class CNVSumstatModel(BaseSumstatModel):
     @computed_field
     @property
     def cnv_id(self) -> str:
-        if self._assembly is None:
-            raise ValueError("Genome assembly was not provided via validation context")
         return (
             f"{self.chromosome}:"
             f"{self.base_pair_start}-"
             f"{self.base_pair_end}:"
             f"{self._assembly}"
         )
+

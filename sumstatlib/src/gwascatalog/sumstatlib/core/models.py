@@ -141,28 +141,16 @@ class BaseSumstatModel(BaseModel, abc.ABC):
     _primary_effect_size: (
         Literal["beta", "z_score", "hazard_ratio", "odds_ratio"] | None
     ) = PrivateAttr()
+    _allow_zero_pvalues: bool = PrivateAttr(default=False)
 
     def model_post_init(self, context: Any, /) -> None:
+        self._allow_zero_pvalues = context.get("allow_zero_p_values", False)
+
         if "primary_effect_size" not in context:
             raise ValueError(
                 "primary_effect_size must be provided via validation context"
             )
         self._primary_effect_size = context["primary_effect_size"]
-
-    @property
-    def effect_size_values(self) -> list[float | None]:
-        return [
-            self.beta,
-            self.odds_ratio,
-            self.z_score,
-            self.hazard_ratio,
-        ]
-
-    @property
-    def effect_size(self) -> float | None:
-        return next(
-            (item for item in self.effect_size_values if item is not None), None
-        )
 
     @property
     def p_value_type(self) -> Literal["p_value", "neg_log10_p_value"]:
@@ -172,23 +160,6 @@ class BaseSumstatModel(BaseModel, abc.ABC):
         if self.neg_log10_p_value is not None:
             return "neg_log10_p_value"
         raise TypeError("Not p_value or neg_log10_p_value is very odd")
-
-    @property
-    def effect_size_type(
-        self,
-    ) -> Literal["beta", "odds_ratio", "z_score", "hazard_ratio"] | None:
-        """Returns the type of the effect size attribute"""
-        match (self.beta, self.odds_ratio, self.z_score, self.hazard_ratio):
-            case None, None, None, None:
-                return None
-            case float(), None, None, None:
-                return "beta"
-            case None, float(), None, None:
-                return "odds_ratio"
-            case None, None, float(), None:
-                return "z_score"
-            case None, None, None, float():
-                return "hazard_ratio"
 
     @abc.abstractmethod
     def validate_semantics(self) -> None:
@@ -245,32 +216,26 @@ class BaseSumstatModel(BaseModel, abc.ABC):
                 )
 
     @model_validator(mode="after")
-    def check_effect_size(self):
-        """Check that no effect sizes are set or only one effect size is set"""
-        count = sum(v is not None for v in self.effect_size_values)
+    def se_mandatory_with_beta(self):
+        """Standard error is mandatory if beta is set"""
+        if self.beta is not None and self.standard_error is None:
+            raise ValueError(f"Standard error is missing for beta")
 
-        if count > 1:
-            raise ValueError(
-                "At most one of beta, odds_ratio, z_score, hazard_ratio may be set"
-            )
+        if self.beta is None and self.standard_error is not None:
+            raise ValueError(f"Standard error requires beta to be set")
 
         return self
 
-    @model_validator(mode="after")
-    def check_standard_error(self):
-        """Standard error is mandatory if an effect size is set"""
-        if self.effect_size_type is not None and self.standard_error is None:
-            raise ValueError(f"Standard error is missing for {self.effect_size_type}")
-        return self
 
     @model_validator(mode="after")
     def check_confidence_interval(self) -> Self:
         lower = self.confidence_interval_lower
         upper = self.confidence_interval_upper
 
-        # No CI provided
-        if lower is None and upper is None:
-            return self
+        # early return when there's no CI
+        if self.odds_ratio is None:
+            if lower is None and upper is None:
+                return self
 
         # Partial CI provided
         if lower is None or upper is None:
@@ -279,13 +244,9 @@ class BaseSumstatModel(BaseModel, abc.ABC):
                 "provided together"
             )
 
-        # note: assumes only one effect size has already been validated
-        effect_size: float | None = next(
-            (item for item in self.effect_size_values if item is not None), None
-        )
-
-        if effect_size is None:
-            raise ValueError("Confidence interval provided but no effect size present")
+        # missing OR
+        if self.odds_ratio is None:
+            raise ValueError("Confidence interval provided but no odds ratio present")
 
         # Bound ordering
         if lower > upper:
@@ -294,7 +255,21 @@ class BaseSumstatModel(BaseModel, abc.ABC):
             )
 
         # Containment
-        if not (lower <= effect_size <= upper):
+        if not (lower <= self.odds_ratio <= upper):
             raise ValueError("Effect size must lie within the confidence interval")
+
+        return self
+
+    @model_validator(mode="after")
+    def primary_effect_size_must_not_be_none(self):
+        if self._primary_effect_size is not None:
+            effect_size = getattr(self, self._primary_effect_size)
+            if effect_size is None:
+                raise ValueError(f"Primary effect size {self._primary_effect_size} must not be None")
+        else:
+            # no primary effect size provided
+            count = sum(1 for v in [self.beta, self.odds_ratio, self.hazard_ratio, self.z_score] if v is not None)
+            if count > 1:
+                raise ValueError("More than one effect size field is set no primary effect size")
 
         return self
