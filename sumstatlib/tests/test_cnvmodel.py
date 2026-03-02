@@ -5,7 +5,11 @@ from gwascatalog.sumstatlib.cnv.models import CNVSumstatModel
 
 # these test cases only cover model specific validation
 
-validation_context = {"assembly": "GRCh38", "primary_effect_size": "beta", "allow_zero_p_values": False}
+validation_context = {
+    "assembly": "GRCh38",
+    "primary_effect_size": "beta",
+    "allow_zero_p_values": False,
+}
 test_cases = [
     # Valid input
     (
@@ -101,7 +105,7 @@ test_cases = [
             "odds_ratio": 0.1,
             "confidence_interval_upper": 0.2,
             "confidence_interval_lower": 0.0,
-            "standard_error": 0.0
+            "standard_error": 0.0,
         },
         {"primary_effect_size": "beta", "assembly": "GRCh38"},
         "Standard error requires beta to be set",

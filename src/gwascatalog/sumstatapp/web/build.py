@@ -102,7 +102,7 @@ def _inject_base_href(html_file: Path, base_path: str) -> None:
         # Fallback: <head> without a trailing newline
         patched = text.replace("<head>", f"<head>\n{tag}", 1)
     html_file.write_text(patched, encoding="utf-8")
-    print(f"   Injected <base href=\"{href}\"> into {html_file.name}")
+    print(f'   Injected <base href="{href}"> into {html_file.name}')
 
 
 def serve(port: int) -> None:
@@ -145,14 +145,15 @@ def main() -> None:
     parser.add_argument(
         "--copy-to",
         metavar="DIR",
-        help="Copy the built web app into DIR (e.g. for static hosting in a Docusaurus site)",
+        help="Copy the built web app into DIR (e.g. for static hosting in a "
+        "Docusaurus site)",
     )
     parser.add_argument(
         "--base-path",
         metavar="PATH",
         help="URL path the app will be served from (e.g. /validator/). "
-             "Injects a <base href> tag so relative assets resolve correctly "
-             "when accessed without a trailing slash.",
+        "Injects a <base href> tag so relative assets resolve correctly "
+        "when accessed without a trailing slash.",
     )
     args = parser.parse_args()
 

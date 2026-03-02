@@ -27,11 +27,12 @@ import json
 import logging
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, TypedDict
+from typing import Literal, TypedDict
 
 from gwascatalog.sumstatlib import (
     CNVSumstatModel,
     GeneSumstatModel,
+    GenomeAssembly,
     SumstatConfig,
     SumstatTable,
 )
@@ -45,8 +46,6 @@ try:
 except ImportError:
     _IN_PYODIDE = False
 
-if TYPE_CHECKING:
-    from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -109,20 +108,20 @@ def _get_model_class(
 
 def _get_validation_context(config: WizardConfig) -> SumstatConfig:
     """Build Pydantic validation context from wizard config."""
-    context: dict[str, Any] = {}
+    allow_zero_p = config.get("allowZeroPvalues", False)
 
-    if config.get("allowZeroPvalues"):
-        context["allow_zero_pvalues"] = True
+    if (asm := config.get("assembly", None)) is not None:
+        assembly = GenomeAssembly(asm)
+    else:
+        assembly = None
 
-    match config.get("variationType"):
-        case "CNV":
-            assembly = config.get("assembly")
-            if not assembly:
-                raise ValueError("Genome assembly is required for CNV data")
-            context["assembly"] = assembly
+    primary_effect_size = config.get("primaryEffectSize", None)
 
-    context["primary_effect_size"] = config.get("primaryEffectSize", None)
-    return SumstatConfig(**context)
+    return SumstatConfig(
+        allow_zero_p_values=allow_zero_p,
+        assembly=assembly,
+        primary_effect_size=primary_effect_size,
+    )
 
 
 class WizardConfig(TypedDict):

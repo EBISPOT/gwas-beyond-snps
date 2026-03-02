@@ -9,7 +9,6 @@ from gwascatalog.sumstatlib._pydantic import (
     computed_field,
     model_validator,
 )
-from gwascatalog.sumstatlib.cnv.sumstat_enums import EffectDirection
 from gwascatalog.sumstatlib.cnv.sumstat_types import (
     StatisticalModelTypeField,
 )
@@ -20,7 +19,6 @@ from gwascatalog.sumstatlib.core.sumstat_types import (
     BasePairEnd,
     BasePairStart,
     Chromosome,
-    SampleSizePerVariant,
 )
 
 if TYPE_CHECKING:
@@ -105,11 +103,16 @@ class CNVSumstatModel(BaseSumstatModel):
 
     @model_validator(mode="after")
     def effect_size_is_mandatory(self) -> Self:
-        """Check that an effect size is provided """
-        count = sum(v is not None for v in [self.beta, self.odds_ratio, self.z_score, self.hazard_ratio])
+        """Check that an effect size is provided"""
+        count = sum(
+            v is not None
+            for v in [self.beta, self.odds_ratio, self.z_score, self.hazard_ratio]
+        )
 
         if count == 0:
-            raise ValueError("At least one of odds_ratio, beta, z_score, or hazard_ratio must be set")
+            raise ValueError(
+                "At least one of odds_ratio, beta, z_score, or hazard_ratio must be set"
+            )
 
         return self
 
@@ -129,4 +132,3 @@ class CNVSumstatModel(BaseSumstatModel):
             f"{self.base_pair_end}:"
             f"{self._assembly}"
         )
-

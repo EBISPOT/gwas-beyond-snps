@@ -54,8 +54,18 @@ def test_basemodel(input_data, context, expected_error):
     if expected_error is None:
         model = DummySumstatModel.model_validate(input_data, context=context)
         # simple check now that the model initialised
-        assert list(model.__class__.model_fields.keys()) == ['p_value', 'neg_log10_p_value', 'z_score', 'odds_ratio', 'beta', 'hazard_ratio', 'standard_error', 'confidence_interval_lower', 'confidence_interval_upper', 'n']
+        assert list(model.__class__.model_fields.keys()) == [
+            "p_value",
+            "neg_log10_p_value",
+            "z_score",
+            "odds_ratio",
+            "beta",
+            "hazard_ratio",
+            "standard_error",
+            "confidence_interval_lower",
+            "confidence_interval_upper",
+            "n",
+        ]
     else:
         with pytest.raises(ValidationError, match=expected_error):
             DummySumstatModel.model_validate(input_data, context=context)
-

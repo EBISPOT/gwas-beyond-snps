@@ -219,13 +219,12 @@ class BaseSumstatModel(BaseModel, abc.ABC):
     def se_mandatory_with_beta(self):
         """Standard error is mandatory if beta is set"""
         if self.beta is not None and self.standard_error is None:
-            raise ValueError(f"Standard error is missing for beta")
+            raise ValueError("Standard error is missing for beta")
 
         if self.beta is None and self.standard_error is not None:
-            raise ValueError(f"Standard error requires beta to be set")
+            raise ValueError("Standard error requires beta to be set")
 
         return self
-
 
     @model_validator(mode="after")
     def check_confidence_interval(self) -> Self:
@@ -233,9 +232,8 @@ class BaseSumstatModel(BaseModel, abc.ABC):
         upper = self.confidence_interval_upper
 
         # early return when there's no CI
-        if self.odds_ratio is None:
-            if lower is None and upper is None:
-                return self
+        if self.odds_ratio is None and lower is None and upper is None:
+            return self
 
         # Partial CI provided
         if lower is None or upper is None:
@@ -265,11 +263,19 @@ class BaseSumstatModel(BaseModel, abc.ABC):
         if self._primary_effect_size is not None:
             effect_size = getattr(self, self._primary_effect_size)
             if effect_size is None:
-                raise ValueError(f"Primary effect size {self._primary_effect_size} must not be None")
+                raise ValueError(
+                    f"Primary effect size {self._primary_effect_size} must not be None"
+                )
         else:
             # no primary effect size provided
-            count = sum(1 for v in [self.beta, self.odds_ratio, self.hazard_ratio, self.z_score] if v is not None)
+            count = sum(
+                1
+                for v in [self.beta, self.odds_ratio, self.hazard_ratio, self.z_score]
+                if v is not None
+            )
             if count > 1:
-                raise ValueError("More than one effect size field is set no primary effect size")
+                raise ValueError(
+                    "More than one effect size field is set no primary effect size"
+                )
 
         return self

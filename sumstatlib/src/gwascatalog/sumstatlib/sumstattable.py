@@ -35,7 +35,7 @@ class SumstatError(TypedDict):
     """A parsed pydantic ValidationError"""
 
     row: int
-    loc: int
+    loc: int | None
     msg: str
 
 
@@ -86,7 +86,7 @@ class SumstatTable:
             return gzip.open(self._path, "rt", encoding="utf-8")
         return self._path.open(mode="rt", encoding="utf-8")
 
-    def parse_csv(self, sample_size: int = 4096) -> Generator[dict, None, None]:
+    def parse_csv(self, sample_size: int = 4096) -> Generator[dict]:
         """Automatically detect CSV delimiter and yield each row as a dict"""
         with self._open_sumstat() as f:
             sample = f.read(sample_size)
@@ -157,7 +157,7 @@ class SumstatTable:
             next(f, None)  # skip header
             return sum(1 for _ in f)
 
-    def validate_rows(self) -> Generator[dict, None, None]:
+    def validate_rows(self) -> Generator[dict]:
         """Validate all rows, storing errors in self._errors and yielding validated
         rows.
         """
@@ -168,8 +168,9 @@ class SumstatTable:
                 ).model_dump()
             except ValidationError as exc:
                 for error in exc.errors():
+                    location = int(error["loc"][0])
                     self._errors.append(
-                        SumstatError(row=i, loc=error["loc"], msg=error["msg"])
+                        SumstatError(row=i, loc=location, msg=error["msg"])
                     )
 
                 if len(self._errors) >= self.MAX_ERRORS:
@@ -269,7 +270,7 @@ class SumstatWriter:
         if self.has_validation_failed:
             self._output_path.unlink()
 
-    def __iter__(self) -> Generator[ValidatedRow, None, None]:
+    def __iter__(self) -> Generator[ValidatedRow]:
         """Validate each row, write valid ones, yield progress for all.
 
         Yields:
@@ -281,6 +282,7 @@ class SumstatWriter:
                 "(use 'with table.open_writer(...) as writer:')"
             )
 
+        fieldset = set(self._table.output_fieldnames)
         for i, row in enumerate(self._table.parse_csv()):
             self._rows_processed = i + 1
             try:
@@ -289,8 +291,12 @@ class SumstatWriter:
                 )
             except ValidationError as exc:
                 for error in exc.errors():
+                    try:
+                        location = int(error["loc"][0])
+                    except IndexError:
+                        location = None
                     self._table.add_error(
-                        SumstatError(row=i, loc=error["loc"], msg=error["msg"])
+                        SumstatError(row=i, loc=location, msg=error["msg"])
                     )
                 yield ValidatedRow(row_number=i, is_valid=False)
 
@@ -302,9 +308,7 @@ class SumstatWriter:
                     break
             else:
                 self._valid_count += 1
-                self._csv_writer.writerow(
-                    instance.model_dump(include=self._table.output_fieldnames)
-                )
+                self._csv_writer.writerow(instance.model_dump(include=fieldset))
                 yield ValidatedRow(row_number=i, is_valid=True)
 
     def run(self):
