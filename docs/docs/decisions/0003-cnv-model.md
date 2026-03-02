@@ -26,32 +26,32 @@ SNP-based GWAS.
 | Field             | Validation notes                                                                         |
 |-------------------|------------------------------------------------------------------------------------------|
 | chromosome        | Integer; must match GWAS-SSF standard (1-22, X = 23, Y = 24, MT = 25)                    |
-| start             | Positive integer; genomic start co-ordinate (co-ordinate system set in metadata)         |
-| end               | Positive integer; genomic end co-ordinate; must satisfy `end ≥ start`                    |
+| base_pair_start   | Positive integer; genomic start co-ordinate (co-ordinate system set in metadata)         |
+| base_pair_end     | Positive integer; genomic end co-ordinate; must satisfy `end ≥ start`                    |
 | p_value           | Float in (0,1]; mutually exclusive with `neg_log10_p_value`                              |
 | neg_log10_p_value | Float ≥ 0; mutually exclusive with `p_value`                                             |
-| effect_direction  | Direction in which the CNV affects a trait; summarising effect size magnitude            |
 | model_type        | Controlled vocabulary for association model; distinguishes multiple models within a file |
 
 ### Optional fields
 
-| Field          | Validation notes                                                                     |
-|----------------|--------------------------------------------------------------------------------------|
-| sample_size    | Optional positive integer; number of samples contributing to this association record |
+| Field | Validation notes                                                                     |
+|-------|--------------------------------------------------------------------------------------|
+| n     | Optional positive integer; number of samples contributing to this association record |
 
 ### Conditional fields
 
-| Field             | Validation notes                                            |
-|-------------------|-------------------------------------------------------------|
-| beta              | A primary effect size must be indicated; float              |
-| odds_ratio        | A primary effect size must be indicated; float              |
-| z_score           | A primary effect size must be indicated; float              |
-| standard_error    | Required if `beta` is provided; float                       |
-| ci_lower          | Required if `odds_ratio` is provided; float                 |
-| ci_upper          | Required if `odds_ratio` is provided; float                 |
+| Field                     | Validation notes                               |
+|---------------------------|------------------------------------------------|
+| beta                      | A primary effect size must be indicated; float |
+| odds_ratio                | A primary effect size must be indicated; float |
+| z_score                   | A primary effect size must be indicated; float |
+| standard_error            | Required if `beta` is provided; float          |
+| confidence_interval_lower | Required if `odds_ratio` is provided; float    |
+| confidence_interval_upper | Required if `odds_ratio` is provided; float    |
 
-A primary effect size must be indicated (e.g. beta, z-score, odds ratio).
-Multiple effect size types can be included as custom fields.
+A primary effect size must be indicated (e.g. beta, z-score, odds ratio) if multiple effect size types are specified. At least one effect size is mandatory.
+
+Z-score doesn't require a measure of uncertainty (standard error / ci_upper / ci_lower).
 
 ### Custom fields
 
@@ -60,8 +60,7 @@ be included after mandatory and optional fields.
 
 ### Computed fields
 
-* CNV identifiers `${chromosome}:${start}:${end}:${assembly}`
-* CNV length (end - start) in bases
+* CNV identifier `${chromosome}:${start}:${end}:${assembly}`
 
 ### Metadata
 

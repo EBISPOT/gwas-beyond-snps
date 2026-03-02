@@ -17,7 +17,7 @@ This prevents consistent validation, indexing, and downstream reuse.
 As of 2025-04-01, 5,648 summary statistics files were identified by GWAS Catalog
 curators as including gene-based analyses. A review of these files found
 inconsistent data structure and field names. After checking shared fields and
-common data patterns a data model was proposed.
+common data patterns, a data model was proposed.
 
 ## Decision
 
@@ -32,27 +32,31 @@ common data patterns a data model was proposed.
 
 ### Optional fields
 
-| Field          | Validation notes                                                            |
-|----------------|-----------------------------------------------------------------------------|
-| beta           | A primary effect size must be indicated; float                              |
-| odds_ratio     | A primary effect size must be indicated; float                              |
-| z_score        | A primary effect size must be indicated; float                              |
-| chromosome     | Integer; must match GWAS-SSF standard (1-22, X = 23, Y = 24, MT = 25)       |
-| sample_size    | Positive integer; number of samples contributing to this association record |
+| Field        | Validation notes                                                            |
+|--------------|-----------------------------------------------------------------------------|
+| beta         | A primary effect size must be indicated; float                              |
+| odds_ratio   | A primary effect size must be indicated; float                              |
+| hazard_ratio | A primary effect size must be indicated; float                              |
+| z_score      | A primary effect size must be indicated; float                              |
+| chromosome   | Integer; must match GWAS-SSF standard (1-22, X = 23, Y = 24, MT = 25)       |
+| n            | Positive integer; number of samples contributing to this association record |
 
 The GWAS Catalog Scientific Advisory Board recommended making effect size an
 optional field for gene-based analyses. Many existing studies do not include a
-measure of effect size.
+measure of effect size. 
+
+A primary effect size only needs to be provided if more than one effect size is
+reported.
 
 ### Conditional fields
 
-| Field          | Validation notes                                                            |
-|----------------|-----------------------------------------------------------------------------|
-| standard_error | Required if `beta` is provided; float                                       |
-| ci_lower       | Required if `odds_ratio` is provided; float                                 |
-| ci_upper       | Required if `odds_ratio` is provided; float                                 |
-| start          | Positive integer; required if `chromosome` is provided                      |
-| end            | Positive integer; required if `chromosome` is provided                      |
+| Field                     | Validation notes                                                            |
+|---------------------------|-----------------------------------------------------------------------------|
+| standard_error            | Required if `beta` is provided; float                                       |
+| confidence_interval_lower | Required if `odds_ratio` is provided; float                                 |
+| confidence_interval_upper | Required if `odds_ratio` is provided; float                                 |
+| base_pair_start           | Positive integer; required if `chromosome` is provided                      |
+| base_pair_end             | Positive integer; required if `chromosome` is provided                      |
 
 ### Custom fields
 
@@ -86,7 +90,7 @@ Documentation will be generated from the annotated Pydantic model.
 
 ## Consequences
 
-Currently most gene-based GWAS authors share lots of data with the GWAS Catalog,
+Currently, most gene-based GWAS authors share lots of data with the GWAS Catalog,
 although this information is unstructured.
 
 After integrating this model with GWAS Catalog data ingest processes, authors
