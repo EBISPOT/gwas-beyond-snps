@@ -16,23 +16,24 @@ flowchart TD
     A --> C
     A --> D
 
-    E[I have many files to validate]
-    F[I have a few files to validate]
-    G[I'm not confident using a terminal]
+    Z[Follow standard submission guidelines at ebi.ac.uk/gwas/docs/submission]
+    B --> Z
+
+    X{How should I validate my files?}
 
     H[Use the web interface at ebi.ac.uk/gwas/apps/beyond-snps]
     I[Use the CLI at github.com/ebispot/gwas-pysumstats]
 
-    E --> I
-    F --> H
-    G --> H
+    C --> X
+    D --> X
 
-    D --> E & F & G
-    C --> E & F & G
+    X -->|Few files OR not confident with terminal| H
+    X -->|Many files AND comfortable with terminal| I
 
     J{Data passes validation and new standardised files have been created?}
 
-    H & I --> J
+    H --> J
+    I --> J
 
     K[Review errors, check docs, correct files, re-validate]
 
@@ -50,7 +51,4 @@ flowchart TD
 
     O[Contact gwas-subs@ebi.ac.uk to complete your submission]
     N --> O
-
-    Z[Follow standard submission guidelines at ebi.ac.uk/gwas/docs/submission]
-    B --> Z
 ```
