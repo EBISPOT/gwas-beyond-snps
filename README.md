@@ -47,6 +47,7 @@ Production build (assumes deployed to a base URL: `gwas/apps/beyond-snps`)
 ```
 $ cd docs
 $ npm run build
-$ npm run serve 
 ```
+
+Deploying the static site is pretty simple: just put the compiled assets somewhere.
 
