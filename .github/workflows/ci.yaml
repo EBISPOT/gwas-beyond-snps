@@ -33,4 +33,4 @@ jobs:
         run: uv venv && uv pip install nox
 
       - name: Run Nox (fail fast)
-        run: nox
+        run: uv tool run nox
