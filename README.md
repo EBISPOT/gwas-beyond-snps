@@ -1,5 +1,7 @@
 # GWAS Catalog: Beyond SNPs
 
+[![CI](https://github.com/EBISPOT/gwas-beyond-snps/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/EBISPOT/gwas-beyond-snps/actions/workflows/ci.yaml)
+
 > [!TIP]
 >  If you've stumbled upon this repository you should almost certainly look at [`gwas-sumstats-tools`](https://github.com/ebispot/gwas-sumstats-tools) instead
  
