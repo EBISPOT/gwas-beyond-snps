@@ -19,3 +19,5 @@ __all__ = [
     "ValidatedRow",
     "GenomeAssembly",
 ]
+
+__version__ = "0.1.0"
