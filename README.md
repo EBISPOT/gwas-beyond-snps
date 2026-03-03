@@ -2,10 +2,7 @@
 
 [![CI](https://github.com/EBISPOT/gwas-beyond-snps/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/EBISPOT/gwas-beyond-snps/actions/workflows/ci.yaml)
 
-> [!TIP]
->  If you've stumbled upon this repository you should almost certainly look at [`gwas-sumstats-tools`](https://github.com/ebispot/gwas-sumstats-tools) instead
- 
-This Python monorepo contains packages and documentation designed to help users prepare non-SNP GWAS summary statistics for submission to the [GWAS Catalog](https://ebi.ac.uk).
+This Python monorepo contains packages and documentation designed to help users prepare non-SNP GWAS summary statistics for submission to the [GWAS Catalog](https://ebi.ac.uk/gwas).
 
 > [!WARNING]
 > This is a **work in progress**. The current version of the package is under active development and may undergo significant changes. The API and functionality are not yet stable, and breaking changes are expected.
@@ -51,5 +48,5 @@ $ cd docs
 $ npm run build
 ```
 
-Deploying the static site is pretty simple: just put the compiled assets somewhere.
+Deploying the static site is pretty simple: just put the compiled assets somewhere (a bucket, a docker image, etc.).
 
