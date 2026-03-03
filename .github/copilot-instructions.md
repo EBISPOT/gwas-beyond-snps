@@ -5,14 +5,16 @@
 A **uv workspace** for validating GWAS summary statistics (Gene-based, CNV) before submission to the [GWAS Catalog](https://ebi.ac.uk/gwas). Two packages share the `gwascatalog` namespace:
 
 - **`sumstatlib`** (`sumstatlib/`) — Pydantic v2 validation library. The canonical data models live here.
-- **`sumstatapp`** (`src/gwascatalog/sumstatapp/`) — Textual TUI wizard that collects metadata and drives validation using sumstatlib.
+- **`sumstatapp`** (`src/gwascatalog/sumstatapp/`) - contains two applications:
+  - A CLI for batch processing (`sumstatapp/cli/`), built using only the standard library (argparse), communicating with `sumstatlib` via direct imports
+  - A web-based version of the same wizard (`sumstatapp/web/`), built with Tailwind CSS and vanilla JS, communicating with `sumstatlib` via WebAssembly (Pyodide)
 
 The application is a scientific workflow for:
 
 1) validating user data and highlighting errors with clear messages and actionable guidance, and
 2) simplifying submission to the GWAS Catalog by generating a compliant summary statistics file and checksums
 
-Input data will regularly contain up to tens of millions of rows. Assume streaming or chunked processing may be required.
+Input data will regularly contain up to tens of millions of rows. Assume streaming or chunked processing may be required (700MB - 1GB input files are typical). The web app must run entirely in the browser, so memory usage is a critical concern.
 
 Failing fast is good, but the user should be able to review a batch of errors in one go, not just the first one encountered. Consider a design where validation errors are collected and displayed in a scrollable panel for user review.
 
@@ -28,15 +30,6 @@ Read `docs/decisions/` for rationale. Key points:
 - **Private attributes** (`PrivateAttr`) store runtime context (e.g. `_assembly`) to keep the data model clean.
 - Concrete models are marked `@final` to prevent deep hierarchies.
 
-## Adding a new data model
-
-1. Create a package under `sumstatlib/src/gwascatalog/sumstatlib/<name>/`
-2. Define `Annotated` types in `sumstat_types.py`, reusing `core/sumstat_types.py` types
-3. Define enums in `sumstat_enums.py` using `StrEnum`
-4. Create the model in `models.py`, inheriting `BaseSumstatModel` and decorated with `@final`
-5. Add tests for types (`test_<name>types.py`) and model (`test_<name>model.py`) in `sumstatlib/tests/`
-6. Export the model in `sumstatlib/src/gwascatalog/sumstatlib/__init__.py`
-
 ## Code conventions
 
 - Every module starts with `from __future__ import annotations`
@@ -49,38 +42,23 @@ Read `docs/decisions/` for rationale. Key points:
 
 ## Error handling
 
-- Prefer to raise ValidationErrors in the library
+- Prefer to raise ValueErrors in the library, which Pydantic will catch and convert into `ValidationError` with clear messages
 - In the validation application (`sumstatapp`), catch and collect `ValidationError` and display messages in a scrollable panel for user review
 - Non-validation exceptions should not be caught, allow them to propagate and crash the app
 
 ## Testing patterns
 
-- **Type tests**: use `TypeAdapter` via the helper `run_type_validation_test()` in `sumstatlib/tests/helpers.py`
-- **Model tests**: parametrize with `(input_data, context, expected_error)` tuples; call `Model.model_validate(input_data, context=context)`
-- Tests assert that `ValidationError` messages contain an expected substring
-- Tests live in `sumstatlib/tests/`; run with `uv run pytest` from the workspace root
+A minimum of 90% coverage is enforced by the CI/CD backend and nox configuration. Integration tests are excluded from coverage calculations. Focus on testing the most critical and complex parts of the codebase, such as the core validation logic in `sumstatlib`. Use mocks and fixtures to isolate units of code and test edge cases effectively.
 
 ## Build & run
 
 ```shell
-uv sync                    # install workspace dependencies
-uv run pytest              # run sumstatlib tests
-uv run ruff check .        # lint
-uv run gwascatalog-submit-sumstat # launch the TUI wizard (sumstatapp entry point)
+uv sync # install workspace dependencies
+nox -s tests # run tests
+nox -s lint # lint
 ```
 
-## TUI app structure (sumstatapp)
-
-It's critical to follow the "one thing per page" principle and other GOV.UK design system guidelines to maximise clarity and usability.
-
-- `SumstatWizardApp` defines a linear screen flow in `SCREEN_ORDER`
-- Each screen extends `WizardScreen` (reactive `can_proceed` gates the Next button)
-- `WizardState` dataclass accumulates user choices across screens
-- Navigation: `push_screen` / `pop_screen`; styles in `wizard.tcss`
-- Validation is triggered on the final review screen, which calls `model_validate()` on the appropriate Pydantic model based on user input
-- Pydantic validation errors are caught and displayed in a scrollable panel for user review
-
-### User persona for sumstatapp
+### User persona for validation applications
 
 - A senior researcher or clinician who is a specialist in their disease/trait
 - They understand the data well, but have limited CLI skills and no time or motivation to learn - they had a bioinformatician do the analysis for them.
