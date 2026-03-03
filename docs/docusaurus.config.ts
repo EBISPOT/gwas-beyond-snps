@@ -35,6 +35,8 @@ const config: Config = {
     locales: ['en'],
   },
 
+  stylesheets: ['https://assets.emblstatic.net/vf/v2.5.26/css/styles.css'],
+
   markdown: {
     mermaid: true,
   },
