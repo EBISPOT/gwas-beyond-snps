@@ -76,7 +76,7 @@ const config: Config = {
     },
     footer: {
       style: 'dark',
-      copyright: `Copyright © ${new Date().getFullYear()} GWAS Catalog <a href="https://creativecommons.org/public-domain/cc0/">(CC-0)</a>.`,
+      copyright: `Copyright © ${new Date().getFullYear()} GWAS Catalog <a href="https://creativecommons.org/licenses/by/4.0/deed.en">(CC-BY-4.0)</a>.`,
     },
     prism: {
       theme: prismThemes.github,
