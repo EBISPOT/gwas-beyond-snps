@@ -869,6 +869,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (msg.type === "ready") {
       workerReady = true;
       hideLoading();
+      if (msg.version) {
+        const el = document.getElementById("sumstatlib-version");
+        if (el) el.innerHTML = `Running <a href="https://github.com/ebispot/gwas-beyond-snps"><code>gwascatalog.sumstatlib</a> ${msg.version}</code> in your browser.`;
+      }
       return;
     }
     if (msg.type === "progress") {

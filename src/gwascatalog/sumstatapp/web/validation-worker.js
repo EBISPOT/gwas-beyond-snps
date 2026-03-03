@@ -50,7 +50,11 @@ async function init() {
   const source = await resp.text();
   pyodide.runPython(source);
 
-  self.postMessage({ type: "ready" });
+  const version = pyodide.runPython(
+    "import gwascatalog.sumstatlib; gwascatalog.sumstatlib.__version__"
+  );
+
+  self.postMessage({ type: "ready", version });
 }
 
 // ── Message handler ──────────────────────────────────────────────
