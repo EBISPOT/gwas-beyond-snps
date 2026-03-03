@@ -41,9 +41,9 @@ common data patterns, a data model was proposed.
 | chromosome   | Integer; must match GWAS-SSF standard (1-22, X = 23, Y = 24, MT = 25)       |
 | n            | Positive integer; number of samples contributing to this association record |
 
-The GWAS Catalog Scientific Advisory Board recommended making effect size an
-optional field for gene-based analyses. Many existing studies do not include a
-measure of effect size. 
+Effect size is currently optional because many existing studies do not include a
+measure of effect size, and we have received feedback that lists of genes and p-values
+are a valuable resource for the community.
 
 A primary effect size only needs to be provided if more than one effect size is
 reported.
@@ -87,6 +87,14 @@ Required context will be injected during validation from the
 GWAS Catalog metadata schema as needed (e.g. assembly, co-ordinate system).
 
 Documentation will be generated from the annotated Pydantic model.
+
+### Output format
+
+The model is responsible for defining output fields in a standardised way,
+like gwas-ssf. Custom fields are appended after the standard fields.
+
+If `chromosome` and `base_pair_start` are provided, output must be sorted
+by these fields.
 
 ## Consequences
 

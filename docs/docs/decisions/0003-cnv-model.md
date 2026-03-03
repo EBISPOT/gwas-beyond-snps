@@ -85,6 +85,14 @@ GWAS Catalog metadata schema as needed (e.g. assembly, co-ordinate system).
 
 Documentation will be generated from the annotated Pydantic model.
 
+### Output format
+
+The model is responsible for defining output fields in a standardised way,
+like gwas-ssf. Custom fields are appended after the standard fields.
+
+If `chromosome` and `base_pair_start` are provided, output must be sorted
+by these fields.
+
 ## Consequences
 
 This data model intentionally introduces a divergence from SNP-based summary
