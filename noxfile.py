@@ -34,6 +34,24 @@ def tests(session):
     # Coverage report (terminal)
     session.run("coverage", "report", "-m", "--fail-under", "90")
 
+    # Queue integration tests session after this session completes
+    session.notify("integration_tests")
+
+
+@nox.session
+def integration_tests(session):
+    session.install(".")
+    session.install("./sumstatlib")
+    # manually install pydantic
+    session.install("pydantic")
+    session.install("pytest")
+
+    # Run only integration tests (adjust marker/glob as appropriate)
+    session.run(
+        "pytest",
+        "sumstatlib/tests/integration",
+    )
+
 
 @nox.session
 def lint(session):
