@@ -167,19 +167,19 @@ def validate_file(config_json: str) -> str:
         rows_processed: int = 0
         valid_count: int = 0
 
-        with sumstat_table.open_writer(_OUTPUT_PATH) as writer:
-            # __iter__ is responsible for side effects (writing out the new file)
-            for row in writer:
-                rows_processed += 1
-                if row.is_valid:
-                    valid_count += 1
-                if rows_processed % _PROGRESS_INTERVAL == 0:
-                    _post_progress(
-                        rows_processed=rows_processed,
-                        valid_count=valid_count,
-                        error_count=len(sumstat_table.errors),
-                        elapsed=time.monotonic() - start_time,
-                    )
+        writer = sumstat_table.open_writer(_OUTPUT_PATH)
+        # __iter__ is responsible for side effects (writing out the new file)
+        for row in writer:
+            rows_processed += 1
+            if row.is_valid:
+                valid_count += 1
+            if rows_processed % _PROGRESS_INTERVAL == 0:
+                _post_progress(
+                    rows_processed=rows_processed,
+                    valid_count=valid_count,
+                    error_count=len(sumstat_table.errors),
+                    elapsed=time.monotonic() - start_time,
+                )
 
         has_output = valid_count > 0 and not sumstat_table.has_validation_failed
         elapsed = time.monotonic() - start_time

@@ -144,20 +144,19 @@ class TestWriterCommit:
 
     def test_commit_creates_output_file(self, cnv_table, tmp_path):
         output = tmp_path / "output.tsv"
-        with cnv_table.open_writer(output) as writer:
-            for _ in writer:
-                pass
+        writer = cnv_table.open_writer(output)
+        for _ in writer:
+            pass
 
-            assert not writer.has_validation_failed
-
+        assert not writer.has_validation_failed
         assert output.exists()
         assert not cnv_table.has_validation_failed
 
     def test_commit_creates_gzip_output(self, cnv_table, tmp_path):
         output = tmp_path / "output.tsv.gz"
-        with cnv_table.open_writer(output) as writer:
-            for _ in writer:
-                pass
+        writer = cnv_table.open_writer(output)
+        for _ in writer:
+            pass
 
         assert output.exists()
         # Verify it's actually gzip by reading magic bytes
@@ -166,9 +165,9 @@ class TestWriterCommit:
 
     def test_commit_output_has_correct_row_count(self, cnv_table, cnv_n_rows, tmp_path):
         output = tmp_path / "output.tsv"
-        with cnv_table.open_writer(output) as writer:
-            for _ in writer:
-                pass
+        writer = cnv_table.open_writer(output)
+        for _ in writer:
+            pass
 
         # Count data rows in the output (subtract 1 for header)
         with output.open(encoding="utf-8") as f:
@@ -182,10 +181,10 @@ class TestWriterProgress:
     def test_yields_validated_rows(self, cnv_table, cnv_n_rows, tmp_path):
         output = tmp_path / "output.tsv"
         results = []
-        with cnv_table.open_writer(output) as writer:
-            for row in writer:
-                assert isinstance(row, ValidatedRow)
-                results.append(row)
+        writer = cnv_table.open_writer(output)
+        for row in writer:
+            assert isinstance(row, ValidatedRow)
+            results.append(row)
 
         assert len(results) == cnv_n_rows
         assert all(r.is_valid for r in results)
@@ -199,16 +198,16 @@ class TestWriterProgress:
 
     def test_rows_processed_count(self, cnv_table, cnv_n_rows, tmp_path):
         output = tmp_path / "output.tsv"
-        with cnv_table.open_writer(output) as writer:
-            for _ in writer:
-                pass
-            assert writer.rows_processed == cnv_n_rows
+        writer = cnv_table.open_writer(output)
+        for _ in writer:
+            pass
+        assert writer.rows_processed == cnv_n_rows
 
     def test_valid_count(self, cnv_table, cnv_n_rows, tmp_path):
         output = tmp_path / "output.tsv"
-        with cnv_table.open_writer(output) as writer:
-            writer.run()
-            assert writer.valid_count == cnv_n_rows
+        writer = cnv_table.open_writer(output)
+        writer.run()
+        assert writer.valid_count == cnv_n_rows
 
 
 class TestWriterErrors:
@@ -216,8 +215,8 @@ class TestWriterErrors:
 
     def test_mixed_valid_invalid(self, mixed_cnv_table, tmp_path):
         output = tmp_path / "output.tsv"
-        with mixed_cnv_table.open_writer(output) as writer:
-            writer.run()
+        writer = mixed_cnv_table.open_writer(output)
+        writer.run()
 
         assert writer.has_validation_failed
         assert not output.exists()
@@ -234,8 +233,136 @@ class TestWriterErrors:
                 config=CNV_CONFIG,
             )
 
-    def test_writer_without_context_manager_raises(self, cnv_table, tmp_path):
-        output = tmp_path / "output.tsv"
-        writer = cnv_table.open_writer(output)
-        with pytest.raises(TypeError, match="context manager"):
-            next(iter(writer))
+
+# ── Sorting tests ─────────────────────────────────────────────────
+
+
+def make_unsorted_csv_file(out_path, rows):
+    """Create a CSV file from a list of row dicts."""
+    fieldnames = list(rows[0].keys())
+    with out_path.open(mode="w", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    return out_path
+
+
+class TestWriterSorted:
+    """Output is sorted by (chromosome, base_pair_start) when fields are present."""
+
+    def test_output_is_sorted(self, tmp_path):
+        """Rows in the output file are ordered by chromosome then base_pair_start."""
+        rows = [
+            {**make_cnv_sumstat_row(), "chromosome": 3, "base_pair_start": 500},
+            {**make_cnv_sumstat_row(), "chromosome": 1, "base_pair_start": 200},
+            {**make_cnv_sumstat_row(), "chromosome": 1, "base_pair_start": 100},
+            {**make_cnv_sumstat_row(), "chromosome": 2, "base_pair_start": 300},
+        ]
+        # ensure all base_pair_end > base_pair_start
+        for r in rows:
+            r["base_pair_end"] = r["base_pair_start"] + 200_000
+
+        csv_path = make_unsorted_csv_file(tmp_path / "unsorted.csv", rows * 25_001)
+        table = SumstatTable(
+            data_model=CNVSumstatModel,
+            input_path=csv_path,
+            config=CNV_CONFIG,
+        )
+
+        output = tmp_path / "sorted.tsv"
+        writer = table.open_writer(output)
+        writer.run()
+
+        assert not writer.has_validation_failed
+        assert output.exists()
+
+        # Verify sort order
+        with output.open(encoding="utf-8") as f:
+            reader = csv.DictReader(f, delimiter="\t")
+            prev = None
+            for row in reader:
+                key = (int(row["chromosome"]), int(row["base_pair_start"]))
+                if prev is not None:
+                    assert key >= prev, f"Output not sorted: {prev} > {key}"
+                prev = key
+
+    def test_sorted_output_has_correct_row_count(self, tmp_path):
+        """Row count is unchanged after sorting."""
+        n_rows = 100_001
+        csv_path = make_csv_file(tmp_path / "data.csv", n_rows)
+        table = SumstatTable(
+            data_model=CNVSumstatModel,
+            input_path=csv_path,
+            config=CNV_CONFIG,
+        )
+
+        output = tmp_path / "sorted.tsv"
+        writer = table.open_writer(output)
+        writer.run()
+
+        with output.open(encoding="utf-8") as f:
+            n_output = sum(1 for _ in f) - 1  # -1 for header
+        assert n_output == n_rows
+
+    def test_sorted_large_dataset(self, tmp_path):
+        """Sorting works correctly with a large number of rows."""
+        n_rows = 100_001
+        csv_path = make_csv_file(tmp_path / "data.csv", n_rows)
+        table = SumstatTable(
+            data_model=CNVSumstatModel,
+            input_path=csv_path,
+            config=CNV_CONFIG,
+        )
+
+        output = tmp_path / "sorted.tsv"
+        writer = table.open_writer(output)
+        writer.run()
+
+        assert not writer.has_validation_failed
+
+        # Verify sort order
+        with output.open(encoding="utf-8") as f:
+            reader = csv.DictReader(f, delimiter="\t")
+            prev = None
+            for row in reader:
+                key = (int(row["chromosome"]), int(row["base_pair_start"]))
+                if prev is not None:
+                    assert key >= prev, f"Output not sorted: {prev} > {key}"
+                prev = key
+
+    def test_sorted_gzip_output(self, tmp_path):
+        """Sorting works with gzip-compressed output."""
+        n_rows = 100_001
+        csv_path = make_csv_file(tmp_path / "data.csv", n_rows)
+        table = SumstatTable(
+            data_model=CNVSumstatModel,
+            input_path=csv_path,
+            config=CNV_CONFIG,
+        )
+
+        output = tmp_path / "sorted.tsv.gz"
+        writer = table.open_writer(output)
+        writer.run()
+
+        assert output.exists()
+        # Verify gzip magic bytes
+        with output.open("rb") as f:
+            assert f.read(2) == b"\x1f\x8b"
+
+    def test_sorted_with_validation_errors_no_output(self, tmp_path):
+        """Output is never created when there are validation errors."""
+        csv_path = make_mixed_csv_file(
+            tmp_path / "mixed.csv", n_valid=100_001, n_invalid=50
+        )
+        table = SumstatTable(
+            data_model=CNVSumstatModel,
+            input_path=csv_path,
+            config=CNV_CONFIG,
+        )
+
+        output = tmp_path / "sorted.tsv"
+        writer = table.open_writer(output)
+        writer.run()
+
+        assert writer.has_validation_failed
+        assert not output.exists()

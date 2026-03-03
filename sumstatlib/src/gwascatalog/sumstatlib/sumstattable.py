@@ -5,7 +5,7 @@ import gzip
 import logging
 from functools import cached_property
 from pathlib import Path
-from typing import IO, TYPE_CHECKING, Literal, NamedTuple, Self, TypedDict
+from typing import IO, TYPE_CHECKING, Literal, NamedTuple, TypedDict
 
 from gwascatalog.sumstatlib._pydantic import ValidationError
 
@@ -213,7 +213,6 @@ class SumstatWriter:
 
     Validates each row against the data model. Guidelines for consumers:
 
-    - _Always_ use this class as a context manager
     - Iterate to process rows
     - Iteration yields a ValidatedRow for every row which includes validation status
     - If you want to report progress, add a check inside the iteration (e.g. every
@@ -238,50 +237,18 @@ class SumstatWriter:
         )
         self._rows_processed = 0
         self._valid_count = 0
-        self._fh: IO[str] | None = None
-        self._csv_writer = None
-
-    def __enter__(self) -> Self:
-        if self._compress:
-            self._fh = gzip.open(self._output_path, "wt", encoding="utf-8", newline="")
-        else:
-            self._fh = self._output_path.open("w", encoding="utf-8", newline="")
-
-        self._csv_writer = csv.DictWriter(
-            self._fh,
-            fieldnames=self._table.output_fieldnames,
-            delimiter="\t",
-            extrasaction="raise",
-        )
-        self._csv_writer.writeheader()
-        return self
-
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_val: BaseException | None,
-        exc_tb: object,
-    ) -> None:
-        if self._fh is not None:
-            self._fh.close()
-            self._fh = None
-            self._csv_writer = None
-
-        if self.has_validation_failed:
-            self._output_path.unlink()
+        self._sort_buffer: list[dict] = []
 
     def __iter__(self) -> Generator[ValidatedRow]:
-        """Validate each row, write valid ones, yield progress for all.
+        """Validate each row, buffer valid ones, sort by genomic position, write.
+
+        Rows are sorted by ``(chromosome, base_pair_start)`` when those fields
+        are present. Rows where either field is absent sort to the end.
+        The output file is written only when all rows pass validation.
 
         Yields:
             A :class:`ValidatedRow` for every row in the input file.
         """
-        if self._fh is None or self._csv_writer is None:
-            raise TypeError(
-                "SumstatWriter must be used as a context manager "
-                "(use 'with table.open_writer(...) as writer:')"
-            )
-
         fieldset = set(self._table.output_fieldnames)
         for i, row in enumerate(self._table.parse_csv()):
             self._rows_processed = i + 1
@@ -304,12 +271,31 @@ class SumstatWriter:
                     logger.critical(
                         f"Stopped validation after {self._table.MAX_ERRORS} errors"
                     )
-                    # exceptions intentionally not raised here - they're collected
                     break
             else:
                 self._valid_count += 1
-                self._csv_writer.writerow(instance.model_dump(include=fieldset))
+                self._sort_buffer.append(instance.model_dump(include=fieldset))
                 yield ValidatedRow(row_number=i, is_valid=True)
+
+        if not self.has_validation_failed and self._sort_buffer:
+            _INF = float("inf")
+            self._sort_buffer.sort(
+                key=lambda row: (
+                    row.get("chromosome") or _INF,
+                    row.get("base_pair_start") or _INF,
+                )
+            )
+            open_fn = gzip.open if self._compress else open
+            with open_fn(self._output_path, "wt", encoding="utf-8", newline="") as fh:
+                writer = csv.DictWriter(
+                    fh,
+                    fieldnames=self._table.output_fieldnames,
+                    delimiter="\t",
+                    extrasaction="raise",
+                )
+                writer.writeheader()
+                writer.writerows(self._sort_buffer)
+            self._sort_buffer.clear()
 
     def run(self):
         """Validate each row and write valid ones without progress reporting."""
