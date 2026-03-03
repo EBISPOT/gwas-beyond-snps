@@ -17,33 +17,56 @@ const sidebars: SidebarsConfig = {
     'intro',
     {
       type: 'category',
-      label: 'Data requirements',
+      label: 'I want to submit data',
       collapsed: false,
       items: [
-        'data-requirements/cnv',
-        'data-requirements/genes',
-        'data-requirements/other',
-
+        'how-to-submit',
+        {
+          type: 'category',
+          label: 'Data requirements',
+          collapsed: false,
+          items: [
+            'data_requirements/cnv',
+            'data_requirements/genes',
+            'data_requirements/other',
+          ],
+        },
+        {
+          type: 'category',
+          label: 'Validate your data',
+          collapsed: false,
+          items: [
+            {
+              type: 'link',
+              label: 'Use your web browser',
+              href: 'pathname:///validate/',
+            },
+            {
+              type: 'link',
+              label: 'Bulk processing with the CLI',
+              href: 'https://github.com/ebispot/gwas-beyond-snps',
+            },
+          ],
+        },
       ],
     },
     {
       type: 'category',
-      label: 'How to validate your data',
-      collapsed: false,
+      label: 'I want to reuse data',
+      collapsed: true,
       items: [
+        'how-to-reuse',
         {
-          type: 'link',
-          label: 'Use your web browser',
-          href: 'pathname:///validate/',
-        },
-        {
-          type: 'link',
-          label: 'Bulk processing with the CLI',
-          href: 'https://github.com/ebispot/gwas-pysumstats',
+          type: 'category',
+          label: 'Architecture decision records',
+          collapsed: true,
+          items: [
+            'decision_records/cnv',
+            'decision_records/genes',
+          ],
         },
       ],
     },
-    'how-to-submit',
   ],
 };
 
