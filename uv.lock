@@ -58,7 +58,7 @@ name = "gwascatalog-sumstatapp"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "gwascatalog-sumstatlib" },
+    { name = "gwascatalog-sumstatlib", extra = ["pydantic"] },
 ]
 
 [package.dev-dependencies]
@@ -68,7 +68,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "gwascatalog-sumstatlib", editable = "sumstatlib" }]
+requires-dist = [{ name = "gwascatalog-sumstatlib", extras = ["pydantic"], editable = "sumstatlib" }]
 
 [package.metadata.requires-dev]
 dev = [

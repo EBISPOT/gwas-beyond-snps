@@ -19,8 +19,11 @@ classifiers = [
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "gwascatalog.sumstatlib",
+    "gwascatalog.sumstatlib[pydantic]",
 ]
+
+[project.scripts]
+gwascatalog = "gwascatalog.sumstatapp.cli.__main__:main"
 
 [tool.uv.workspace]
 members = [
