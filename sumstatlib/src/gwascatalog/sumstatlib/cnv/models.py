@@ -96,11 +96,6 @@ class CNVSumstatModel(BaseSumstatModel):
         # validate start location is smaller than chromosome size?
         raise NotImplementedError
 
-    @computed_field
-    @property
-    def cnv_length(self) -> int:
-        return self.base_pair_end - self.base_pair_start
-
     @model_validator(mode="after")
     def effect_size_is_mandatory(self) -> Self:
         """Check that an effect size is provided"""
