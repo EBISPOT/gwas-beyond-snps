@@ -27,7 +27,7 @@ def invalid_cnv_file(tmp_path) -> Path:
 def make_cnv_file(path: Path, is_valid: bool, n_rows: int = 200_000) -> Path:
     random.seed(get_random_number())
     cnvs = (make_cnv_sumstat_row(valid=is_valid) | {"row_nr": i} for i in range(n_rows))
-    fieldnames = make_cnv_sumstat_row().keys()
+    fieldnames = make_cnv_sumstat_row().keys() | {"row_nr"}
 
     with path.open("wt") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
