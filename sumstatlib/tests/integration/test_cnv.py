@@ -18,6 +18,7 @@ def check_cnv_structure(row):
 
 
 def test_unsorted_input(tmp_path, cnv_file_with_rownums):
+    """Validation should check the structure of CNVs and sort the output"""
     config = SumstatConfig(
         assembly=GenomeAssembly.GRCH38,
         allow_zero_p_values=False,

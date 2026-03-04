@@ -40,13 +40,6 @@ def make_mixed_csv_file(out_path: Path, n_valid: int, n_invalid: int) -> Path:
 
 
 @pytest.fixture
-def small_cnv_sumstat_file(tmp_path):
-    """Write a CNV sumstat file containing 10,000 rows"""
-    out_path = tmp_path / "cnv_sumstat_file.csv"
-    return make_csv_file(out_path, 10)
-
-
-@pytest.fixture
 def cnv_n_rows() -> int:
     return 100_001
 
@@ -56,20 +49,6 @@ def cnv_sumstat_file(tmp_path, cnv_n_rows):
     """Write a CNV sumstat file containing 10,000 rows"""
     out_path = tmp_path / "cnv_sumstat_file.csv"
     return make_csv_file(out_path, cnv_n_rows)
-
-
-def test_small_cnv_sumstat(small_cnv_sumstat_file):
-    with pytest.raises(ValueError) as excinfo:
-        SumstatTable(
-            data_model=CNVSumstatModel,
-            input_path=small_cnv_sumstat_file,
-            config={
-                "primary_effect_size": "beta",
-                "allow_zero_p_values": False,
-                "assembly": GenomeAssembly.GRCH38,
-            },
-        )
-        assert "Not enough rows in file" in excinfo
 
 
 @pytest.fixture

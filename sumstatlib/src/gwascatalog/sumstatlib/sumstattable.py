@@ -75,7 +75,7 @@ class SumstatTable:
             self._min_records = min_records
 
         n_rows = self.n_rows
-        if n_rows < self._min_records:
+        if self._min_records is not None and n_rows < self._min_records:
             raise ValueError(f"Not enough rows in file: {n_rows=} {self._min_records=}")
 
         # Validate first row to check column structure — fail fast on bad columns

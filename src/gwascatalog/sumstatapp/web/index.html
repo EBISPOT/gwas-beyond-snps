@@ -444,6 +444,7 @@
       <ol id="wizard-progress" class="wizard-progress">
         <li class="active">Welcome</li>
         <li>Variation type</li>
+        <li>Row count</li>
         <li>Data checklist</li>
         <li>Thresholding</li>
         <li>Select file</li>
@@ -558,7 +559,61 @@
       </section>
 
       <!-- ====================================================== -->
-      <!-- Step 3: Describe your columns                            -->
+      <!-- Step 3: Minimum row count                                -->
+      <!-- ====================================================== -->
+      <section id="step-rowcount" hidden>
+        <h2>Does your file meet the minimum row count?</h2>
+
+        <details class="wizard-help">
+          <summary>Why do we ask this?</summary>
+          <p>
+            Typically the GWAS Catalog requires genome-wide summary statistics, not
+            just top hits. Files with too few rows may be rejected at
+            submission if they don't represent a complete genome-wide analysis.
+          </p>
+        </details>
+
+        <p id="rowcount-description"></p>
+
+        <fieldset>
+          <legend class="vf-u-sr-only">Does your file meet the minimum row count?</legend>
+          <label class="radio-option">
+            <input type="radio" name="meets_row_count" value="yes">
+            Yes, my file has at least this many rows
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="meets_row_count" value="no">
+            No, my file has fewer rows than this
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="meets_row_count" value="unsure">
+            I'm not sure
+          </label>
+        </fieldset>
+
+        <div class="wizard-warning" id="warn-rowcount" hidden role="status">
+          <p><strong>Your file may not meet the minimum row count requirement.</strong></p>
+          <p>
+            You can still continue and validate your file, but submissions
+            without genome-wide coverage may be rejected. If you believe
+            this is correct for your study design, please contact
+            <a href="mailto:gwas-subs@ebi.ac.uk">gwas-subs@ebi.ac.uk</a>
+            before submitting.
+          </p>
+        </div>
+
+        <nav class="wizard-nav">
+          <button type="button" class="vf-button vf-button--secondary" data-action="prev">
+            ← Previous
+          </button>
+          <button type="button" class="vf-button vf-button--primary" id="next-rowcount" disabled data-action="next">
+            Next →
+          </button>
+        </nav>
+      </section>
+
+      <!-- ====================================================== -->
+      <!-- Step 4: Describe your columns                            -->
       <!-- ====================================================== -->
       <section id="step-columns" hidden>
         <h2>Which columns are present in your summary statistics?</h2>
