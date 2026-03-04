@@ -1,0 +1,16 @@
+
+replicaCount: 1
+
+image:
+  repository: dockerhub.ebi.ac.uk/gwas/gwas-beyond-snps
+  tag: dev
+  pullPolicy: IfNotPresent
+
+
+
+service:
+  name: gwas-deposition-backend
+  type: NodePort
+  port: 80
+
+namespace: gwas-dev
