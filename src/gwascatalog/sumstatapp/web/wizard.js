@@ -24,6 +24,7 @@
 const STEPS = [
   "welcome",
   "variation",
+  "rowcount",
   "columns",
   "threshold",
   "file",
@@ -135,12 +136,14 @@ function handleVariationChange() {
   if (value === "CNV") {
     document.getElementById("assembly-group").hidden = false;
     nextBtn.disabled = !document.getElementById("assembly").value;
-    // Update columns page
+    // Update columns and row count pages
     showColumnsFor("CNV");
+    updateRowCountPage("CNV");
     return;
   }
   // GENE
   showColumnsFor("GENE");
+  updateRowCountPage("GENE");
   nextBtn.disabled = false;
 }
 
@@ -224,7 +227,48 @@ function updatePrimaryEffectFieldset(checkboxName, fieldsetId, radioName, contai
 
   fieldset.hidden = false;
 }
+// ── Row count step ─────────────────────────────────────────────────────
 
+const ROW_COUNT_MINIMUMS = {
+  GENE: { count: 10_000, unit: "genes" },
+  CNV:  { count: 10_000, unit: "variants" },
+};
+
+/**
+ * Update the row count step's descriptive text to match the selected
+ * variation type, and reset any prior answer.
+ * @param {string} variationType - "GENE" or "CNV"
+ */
+function updateRowCountPage(variationType) {
+  const min = ROW_COUNT_MINIMUMS[variationType];
+  if (!min) return;
+
+  const desc = document.getElementById("rowcount-description");
+  if (desc) {
+    desc.innerHTML =
+      `The GWAS Catalog requires a minimum of <strong>${min.count.toLocaleString()} rows</strong> ` +
+      `(${min.unit}) to ensure your submission represents a genome-wide analysis. ` +
+      `Does your file meet this requirement?`;
+  }
+
+  // Reset any prior selection when the variation type changes
+  document.querySelectorAll('input[name="meets_row_count"]').forEach(
+    (r) => (r.checked = false)
+  );
+  const warn = document.getElementById("warn-rowcount");
+  if (warn) warn.hidden = true;
+  const nextBtn = document.getElementById("next-rowcount");
+  if (nextBtn) nextBtn.disabled = true;
+}
+
+function handleRowCountChange() {
+  const value = document.querySelector(
+    'input[name="meets_row_count"]:checked'
+  )?.value;
+  const warn = document.getElementById("warn-rowcount");
+  if (warn) warn.hidden = value === "yes";
+  document.getElementById("next-rowcount").disabled = !value;
+}
 // ── Threshold step ───────────────────────────────────────────────
 
 function handleThresholdChange() {
@@ -788,6 +832,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll('input[name="zero_pvalues"]').forEach((r) =>
     r.addEventListener("change", handleThresholdChange)
   );
+  document.querySelectorAll('input[name="meets_row_count"]').forEach((r) =>
+    r.addEventListener("change", handleRowCountChange)
+  );
   document.querySelectorAll('input[name="gene_effect_size"]').forEach((r) =>
     r.addEventListener("change", handleGeneEffectSizeChange)
   );
@@ -854,6 +901,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("columns-gene").hidden = true;
     document.getElementById("columns-cnv").hidden = true;
     document.getElementById("columns-placeholder").hidden = false;
+    document.getElementById("warn-rowcount").hidden = true;
     document.querySelectorAll(".wizard-warning").forEach((w) => (w.hidden = true));
     document.querySelectorAll(".field-error").forEach((e) => (e.hidden = true));
     document.getElementById("primary-effect-gene").hidden = true;
