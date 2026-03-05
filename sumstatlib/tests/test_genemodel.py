@@ -47,7 +47,15 @@ test_cases = [
         "valid_ensembl_with_odds_ratio",
     ),
     # invalid cases
-    # multiple effect sizes but primary effect size is none
+    # missing a gene name
+    (
+        {
+            "p_value": 0.0001,
+        },
+        validation_context,
+        "Missing ensembl_gene_id or hgnc_symbol",
+        "missing_gene_name",
+    ),
     (
         {
             "ensembl_gene_id": "ENSG00000172183",
@@ -83,8 +91,21 @@ test_cases = [
             "base_pair_end": 100,
         },
         validation_context,
-        "Bad combination",
+        "Location fields",
         "missing_chromosome",
+    ),
+    (
+        {
+            "hgnc_symbol": "ISG20",
+            "z_score": 3,
+            "p_value": 0.0001,
+            "chromosome": 1,
+            "base_pair_start": 1000,
+            "base_pair_end": None,
+        },
+        validation_context,
+        "Location fields",
+        "missing end position",
     ),
 ]
 

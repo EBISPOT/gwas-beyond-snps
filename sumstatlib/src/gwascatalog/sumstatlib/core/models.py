@@ -152,15 +152,6 @@ class BaseSumstatModel(BaseModel, abc.ABC):
             )
         self._primary_effect_size = context["primary_effect_size"]
 
-    @property
-    def p_value_type(self) -> Literal["p_value", "neg_log10_p_value"]:
-        """Returns the type of the p-value attribute"""
-        if self.p_value is not None:
-            return "p_value"
-        if self.neg_log10_p_value is not None:
-            return "neg_log10_p_value"
-        raise TypeError("Not p_value or neg_log10_p_value is very odd")
-
     @abc.abstractmethod
     def validate_semantics(self) -> None:
         """Does this data make sense in the context of the domain and the real world?
@@ -210,7 +201,7 @@ class BaseSumstatModel(BaseModel, abc.ABC):
                     "(not both)"
                 )
 
-            case _:
+            case _:  # pragma: no cover
                 raise ValueError(
                     f"Invalid p-values: {self.p_value=}, {self.neg_log10_p_value=}"
                 )

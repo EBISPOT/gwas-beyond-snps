@@ -30,7 +30,7 @@ try:
         model_validator,
     )
     from pydantic_core import ErrorDetails
-except ImportError as e:
+except ImportError as e:  # pragma: no cover
     raise ImportError(
         "pydantic is required to use this package. Install with `pip install "
         "gwascatalog.sumstatlib[pydantic]`."
@@ -38,7 +38,7 @@ except ImportError as e:
 else:
     import pydantic
 
-    if not pydantic.__version__.startswith("2."):
+    if not pydantic.__version__.startswith("2."):  # pragma: no cover
         raise ImportError("Pydantic v2 required")
 
 __all__ = [

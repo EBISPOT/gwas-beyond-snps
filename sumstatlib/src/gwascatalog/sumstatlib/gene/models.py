@@ -95,26 +95,23 @@ class GeneSumstatModel(BaseSumstatModel):
     def validate_semantics(self):
         raise NotImplementedError
 
-    @classmethod
-    def valid_field_names(cls) -> list[str]:
-        return list(GENE_FIELD_INDEX_MAP.keys())
-
     @model_validator(mode="after")
     def validate_location(self) -> Self:
+        """Ensures chromosome, start, and end are provided as a complete set."""
         match (self.chromosome, self.base_pair_start, self.base_pair_end):
-            case None, None, None:
+            case (None, None, None):
                 return self
-            case int(), int() as start, int() as end:
+            case (int(), int() as start, int() as end):
+                # Type checker now knows start and end are 'int'
                 if end <= start:
                     raise ValueError(
                         "base_pair_end must be greater than base_pair_start"
                     )
                 return self
-            case _, int(), None | _, None, int():
-                raise ValueError("Provide both values: base_pair_start, base_pair_end")
             case _:
                 raise ValueError(
-                    "Bad combination of chromosome, base_pair_start, base_pair_end"
+                    "Location fields (chromosome, base_pair_start, base_pair_end) "
+                    "must all be provided together, or all left empty."
                 )
 
     @model_validator(mode="after")

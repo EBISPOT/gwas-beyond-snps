@@ -30,7 +30,14 @@ def tests(session):
     )
 
     # Coverage report (terminal)
-    session.run("coverage", "report", "-m", "--fail-under", "90")
+    session.run(
+        "coverage",
+        "report",
+        "-m",
+        "--fail-under",
+        "90",
+        "--omit=sumstatlib/tests/conftest.py",
+    )
 
     # Queue integration tests session after this session completes
     session.notify("integration_tests")
