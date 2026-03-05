@@ -21,14 +21,12 @@ def tests(session):
     session.run(
         "coverage",
         "run",
-        "--source=src,sumstatlib",
-        "--omit=*/integration/*",
+        "--source=gwascatalog,sumstatlib/tests",
+        "--omit=sumstatlib/tests/integration/*",
         "-m",
         "pytest",
-        "src",
+        "--ignore=sumstatlib/tests/integration",
         "sumstatlib",
-        "--ignore-glob=src/**/integration",
-        "--ignore-glob=sumstatlib/**/integration",
     )
 
     # Coverage report (terminal)
