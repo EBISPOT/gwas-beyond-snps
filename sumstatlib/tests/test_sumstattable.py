@@ -153,6 +153,20 @@ class TestWriterCommit:
             n_lines = sum(1 for _ in f) - 1  # -1 for header
         assert n_lines == cnv_n_rows
 
+    def test_output_uses_unix_newlines(self, cnv_table, tmp_path):
+        """Output file should always use Unix-style line endings."""
+        output = tmp_path / "output.tsv"
+        writer = cnv_table.open_writer(output)
+        writer.run()
+
+        assert not writer.has_validation_failed
+        assert output.exists()
+
+        # Read in binary mode to check for \r characters
+        with output.open("rb") as f:
+            content = f.read()
+            assert b"\r" not in content
+
 
 class TestWriterProgress:
     """Writer yields ValidatedRow for every row and tracks counts."""

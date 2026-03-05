@@ -83,8 +83,8 @@ class SumstatTable:
 
     def _open_sumstat(self) -> IO[str]:
         if _is_gzip(self._path):
-            return gzip.open(self._path, "rt", encoding="utf-8")
-        return self._path.open(mode="rt", encoding="utf-8")
+            return gzip.open(self._path, "rt", encoding="utf-8", newline=None)
+        return self._path.open(mode="rt", encoding="utf-8", newline=None)
 
     def parse_csv(self, sample_size: int = 4096) -> Generator[dict]:
         """Automatically detect CSV delimiter and yield each row as a dict"""
@@ -292,6 +292,7 @@ class SumstatWriter:
                     fieldnames=self._table.output_fieldnames,
                     delimiter="\t",
                     extrasaction="raise",
+                    lineterminator="\n",
                 )
                 writer.writeheader()
                 writer.writerows(self._sort_buffer)
