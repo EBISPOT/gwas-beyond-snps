@@ -568,7 +568,8 @@
           <summary>Why do we ask this?</summary>
           <p>
             GWAS Catalog submissions are expected to be full genome-wide datasets, not just top hits.
-            Files with too few rows may be rejected at submission if they don't represent a complete genome-wide analysis.
+            Files with too few rows may be reviewed or rejected during submission if they don't represent
+            a complete genome-wide analysis.
           </p>
         </details>
 
@@ -594,10 +595,15 @@
           <p><strong>Your file may not meet the minimum row count requirement.</strong></p>
           <p>
             You can still continue and validate your file, but submissions
-            without genome-wide coverage may be rejected. If you believe
+            without genome-wide coverage may be reviewed or rejected. If you believe
             this is correct for your study design, please contact
             <a href="mailto:gwas-subs@ebi.ac.uk">gwas-subs@ebi.ac.uk</a>
             before submitting.
+          </p>
+          <p>
+            It's OK if quality control steps have reduced the number of rows in your final dataset below
+            the minimum row count, but please ensure you are submitting the full set of variants that were
+            analysed in your study, including data which didn't meet GWAS significance.
           </p>
         </div>
 
