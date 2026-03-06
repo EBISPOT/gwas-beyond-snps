@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Values.service.name }}
-  namespace: {{ .Values.namespace }}
   labels:
     app: {{ .Values.service.name }}
 spec:
@@ -21,6 +20,14 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: 80
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
           resources:
             requests:
               cpu: {{ .Values.resources.requests.cpu }}

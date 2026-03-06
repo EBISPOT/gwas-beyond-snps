@@ -5,11 +5,9 @@ metadata:
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /gwas/apps/beyond-snps/$2
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
-  namespace: {{  .Values.namespace  }}
 spec:
   rules:
-  - host:
-    http:
+  - http:
       paths:
       - path: {{.Values.ingress.path}}
         backend:

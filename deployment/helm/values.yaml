@@ -15,8 +15,6 @@ ingress:
   annotations: {}
   path: "/apps/beyond-snps(/|$)(.*)"
 
-namespace: gwas
-
 resources:
   limits:
     cpu: 250m
