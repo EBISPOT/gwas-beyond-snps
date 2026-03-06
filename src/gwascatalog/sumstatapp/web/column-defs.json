@@ -1,0 +1,366 @@
+{
+  "gene": {
+    "label": "Gene-based GWAS",
+    "minimumRows": 10000,
+    "groups": [
+      {
+        "id": "gene-name",
+        "label": "Gene name",
+        "hint": "At least one gene identifier must be provided.",
+        "requirement": "mandatory",
+        "selectionRule": "exactlyOne",
+        "form": { "inputType": "radio", "name": "gene_name" },
+        "columns": [
+          {
+            "code": "hgnc_symbol",
+            "description": "HGNC symbol (e.g. TP53)",
+            "form": { "value": "hgnc_symbol" }
+          },
+          {
+            "code": "ensembl_gene_id",
+            "description": "Ensembl gene ID (e.g. ENSG00000141510)",
+            "form": { "value": "ensembl_gene_id" }
+          }
+        ],
+        "errors": [
+          { "id": "error-gene-name", "message": "Please select how genes are named in your data." }
+        ]
+      },
+      {
+        "id": "gene-pvalue",
+        "label": "p value representation",
+        "hint": "How are p values stored in your file? Please only include one field.",
+        "requirement": "mandatory",
+        "selectionRule": "exactlyOne",
+        "form": { "inputType": "radio", "name": "p_value_type" },
+        "columns": [
+          {
+            "code": "p_value",
+            "description": "p value (e.g. 0.00034). Smaller p values are more significant.",
+            "form": { "value": "p_value" }
+          },
+          {
+            "code": "neg_log10_p_value",
+            "description": "Negative log\u2081\u2080 p value (e.g. 3.47). Larger values indicate greater significance.",
+            "form": { "value": "neg_log10" }
+          }
+        ],
+        "errors": [
+          { "id": "error-gene-pvalue", "message": "Please select how p values are represented in your data." }
+        ]
+      },
+      {
+        "id": "gene-position",
+        "label": "Position",
+        "hint": "How is the position of the gene represented?",
+        "requirement": "optional",
+        "requirementDetail": "If any position field is included, all three must be provided.",
+        "selectionRule": "allOrNone",
+        "form": { "inputType": "checkbox", "name": "gene_position" },
+        "columns": [
+          {
+            "code": "chromosome",
+            "description": "Chromosome where the gene is located",
+            "form": { "value": "chromosome" }
+          },
+          {
+            "code": "base_pair_start",
+            "description": "Start position of the gene (0/1 based)",
+            "form": { "value": "start" }
+          },
+          {
+            "code": "base_pair_end",
+            "description": "End position of the gene (0/1 based)",
+            "form": { "value": "end" }
+          }
+        ],
+        "errors": [
+          { "id": "error-gene-position", "message": "If you include position data, all three fields (chromosome, start, end) are required." }
+        ]
+      },
+      {
+        "id": "gene-effect",
+        "label": "Effect size",
+        "hint": "Measuring effect sizes is optional for gene-based GWAS. The most common choices are beta and odds ratio.",
+        "requirement": "optional",
+        "selectionRule": "any",
+        "form": { "inputType": "checkbox", "name": "gene_effect_size" },
+        "columns": [
+          {
+            "code": "beta",
+            "description": "Regression coefficient.",
+            "form": { "value": "beta" }
+          },
+          {
+            "code": "odds_ratio",
+            "description": "Odds ratio estimate.",
+            "form": { "value": "odds_ratio" }
+          },
+          {
+            "code": "z_score",
+            "description": "Z-score statistic.",
+            "form": { "value": "z_score" }
+          },
+          {
+            "code": "hazard_ratio",
+            "description": "Hazard ratio estimate.",
+            "form": { "value": "hazard_ratio" }
+          }
+        ],
+        "errors": [
+          { "id": "error-gene-or-hr-conflict", "message": "Odds ratio and hazard ratio cannot both be selected as effect sizes." }
+        ],
+        "hasPrimarySelection": true,
+        "primaryForm": {
+          "fieldsetId": "primary-effect-gene",
+          "containerId": "primary-effect-gene-options",
+          "name": "primary_effect_gene",
+          "hint": "You've selected multiple effect sizes. Which is the primary measure of effect for your study?",
+          "note": "(The primary measure of effect will be put in a standardised column index in the output file.)"
+        }
+      },
+      {
+        "id": "gene-uncertainty",
+        "label": "Uncertainty estimate",
+        "hint": "If you include an effect size, you must provide an uncertainty estimate. The most common choices are standard error for beta, and confidence intervals for odds ratios or hazard ratios.",
+        "requirement": "conditional",
+        "requirementDetail": "Required when an effect size is provided.",
+        "selectionRule": "any",
+        "form": { "inputType": "checkbox", "name": "gene_uncertainty_estimate" },
+        "columns": [
+          {
+            "code": "standard_error",
+            "description": "Standard error.",
+            "form": { "value": "standard_error" }
+          },
+          {
+            "code": "ci_lower",
+            "description": "Lower bound of the confidence interval (typically odds ratio).",
+            "form": { "value": "ci_lower" }
+          },
+          {
+            "code": "ci_upper",
+            "description": "Upper bound of the confidence interval (typically odds ratio).",
+            "form": { "value": "ci_upper" }
+          }
+        ],
+        "errors": [
+          { "id": "error-gene-beta-uncertainty", "message": "Standard error is only valid for beta, and beta requires a standard error." },
+          { "id": "error-gene-zscore-uncertainty", "message": "Z-score is a standardised statistic and cannot have an associated uncertainty estimate." },
+          { "id": "error-gene-ci-required", "message": "Confidence intervals are only valid for odds ratio or hazard ratio. Both bounds must be provided if one is given." }
+        ]
+      },
+      {
+        "id": "gene-other",
+        "label": "Other fields",
+        "hint": "Please consider including this data to improve the quality of your submission.",
+        "note": "You can also include a reasonable number of extra fields relevant to your study in your submission.",
+        "requirement": "optional",
+        "selectionRule": "any",
+        "form": { "inputType": "checkbox", "name": "gene_other" },
+        "columns": [
+          {
+            "code": "n",
+            "description": "Sample size per gene.",
+            "form": { "value": "n" }
+          }
+        ]
+      }
+    ]
+  },
+  "cnv": {
+    "label": "Copy Number Variant (CNV)",
+    "minimumRows": 100000,
+    "groups": [
+      {
+        "id": "cnv-position",
+        "label": "Position",
+        "hint": "How is the position of the variant represented?",
+        "requirement": "mandatory",
+        "selectionRule": "all",
+        "form": { "inputType": "checkbox", "name": "col_cnv" },
+        "columns": [
+          {
+            "code": "chromosome",
+            "description": "Chromosome where the variant is located",
+            "form": { "value": "chromosome" }
+          },
+          {
+            "code": "base_pair_start",
+            "description": "Start position of the variant (0/1 based)",
+            "form": { "value": "start" }
+          },
+          {
+            "code": "base_pair_end",
+            "description": "End position of the variant (0/1 based)",
+            "form": { "value": "end" }
+          }
+        ],
+        "errors": [
+          { "id": "error-cnv-position", "message": "All position fields (chromosome, start, end) are required." }
+        ]
+      },
+      {
+        "id": "cnv-pvalue",
+        "label": "Statistical significance",
+        "hint": "How are p values stored in your file?",
+        "requirement": "mandatory",
+        "selectionRule": "exactlyOne",
+        "form": { "inputType": "radio", "name": "p_value_type" },
+        "columns": [
+          {
+            "code": "p_value",
+            "description": "p value. Smaller p values are more significant.",
+            "form": { "value": "p_value" }
+          },
+          {
+            "code": "neg_log10_p_value",
+            "description": "Negative log\u2081\u2080 of the p value. Larger values indicate greater significance.",
+            "form": { "value": "neg_log10" }
+          }
+        ],
+        "errors": [
+          { "id": "error-cnv-pvalue", "message": "Please select how p values are represented in your data." }
+        ]
+      },
+      {
+        "id": "cnv-effect",
+        "label": "Effect size",
+        "hint": "At least one effect size must be selected.",
+        "requirement": "mandatory",
+        "selectionRule": "atLeastOne",
+        "form": { "inputType": "checkbox", "name": "effect_size" },
+        "columns": [
+          {
+            "code": "beta",
+            "description": "Regression coefficient.",
+            "form": { "value": "beta" }
+          },
+          {
+            "code": "odds_ratio",
+            "description": "Odds ratio estimate.",
+            "form": { "value": "odds_ratio" }
+          },
+          {
+            "code": "hazard_ratio",
+            "description": "Hazard ratio estimate.",
+            "form": { "value": "hazard_ratio" }
+          },
+          {
+            "code": "z_score",
+            "description": "Z-score statistic.",
+            "form": { "value": "z_score" }
+          }
+        ],
+        "errors": [
+          { "id": "error-cnv-effect", "message": "At least one effect size must be selected." },
+          { "id": "error-cnv-or-hr-conflict", "message": "Odds ratio and hazard ratio cannot both be selected as effect sizes." }
+        ],
+        "hasPrimarySelection": true,
+        "primaryForm": {
+          "fieldsetId": "primary-effect-cnv",
+          "containerId": "primary-effect-cnv-options",
+          "name": "primary_effect_cnv",
+          "hint": "You've selected multiple effect sizes. Which is the primary measure of effect for your study?",
+          "note": null
+        }
+      },
+      {
+        "id": "cnv-uncertainty",
+        "label": "Uncertainty estimate",
+        "hint": "How have you measured the uncertainty of your effect size estimates?",
+        "requirement": "conditional",
+        "requirementDetail": "Required when an effect size is provided.",
+        "selectionRule": "any",
+        "columns": [
+          {
+            "code": "standard_error",
+            "description": "Standard error.",
+            "form": { "inputType": "checkbox", "name": "standard_error", "value": "se" }
+          },
+          {
+            "code": "confidence_interval_lower",
+            "description": "Lower bound of the primary effect size confidence interval (typically odds ratio).",
+            "form": { "inputType": "checkbox", "name": "ci_lower", "value": "confidence_interval_lower" }
+          },
+          {
+            "code": "confidence_interval_upper",
+            "description": "Upper bound of the primary effect size confidence interval (typically odds ratio).",
+            "form": { "inputType": "checkbox", "name": "ci_upper", "value": "confidence_interval_upper" }
+          }
+        ],
+        "errors": [
+          { "id": "error-cnv-beta-uncertainty", "message": "Standard error is only valid for beta, and beta requires a standard error." },
+          { "id": "error-cnv-zscore-uncertainty", "message": "Z-score is a standardised statistic and cannot have an associated uncertainty estimate." },
+          { "id": "error-cnv-ci-required", "message": "Confidence intervals are only valid for odds ratio or hazard ratio. Both bounds must be provided if one is given." }
+        ]
+      },
+      {
+        "id": "cnv-model",
+        "label": "Statistical model information",
+        "hint": "Additional information about the statistical model used in the study.",
+        "requirement": "mandatory",
+        "selectionRule": "all",
+        "form": { "inputType": "checkbox", "name": "model_type" },
+        "columns": [
+          {
+            "code": "statistical_model_type",
+            "description": "Genetic association model type (e.g. additive, dominant, recessive)",
+            "form": { "value": "statistical_model_type" }
+          }
+        ],
+        "errors": [
+          { "id": "error-cnv-model", "message": "Statistical model type is required." }
+        ]
+      },
+      {
+        "id": "cnv-other",
+        "label": "Other fields",
+        "hint": "Please consider including this data to improve the quality of your submission.",
+        "note": "You can also include a reasonable number of extra fields relevant to your study in your submission.",
+        "requirement": "optional",
+        "selectionRule": "any",
+        "form": { "inputType": "checkbox", "name": "col_cnv_opt" },
+        "columns": [
+          {
+            "code": "n",
+            "description": "Sample size per variant.",
+            "form": { "value": "n" }
+          }
+        ]
+      }
+    ]
+  },
+  "validationRules": [
+    {
+      "id": "beta-requires-se",
+      "summary": "Beta requires standard error",
+      "detail": "If beta is selected as an effect size, standard_error must also be included as an uncertainty estimate. Standard error may only be used with beta.",
+      "appliesTo": ["gene", "cnv"]
+    },
+    {
+      "id": "ci-requires-or-hr",
+      "summary": "Confidence intervals require odds ratio or hazard ratio",
+      "detail": "Confidence interval bounds are only valid when odds_ratio or hazard_ratio is selected as an effect size. If one bound is provided, both must be provided.",
+      "appliesTo": ["gene", "cnv"]
+    },
+    {
+      "id": "zscore-no-uncertainty",
+      "summary": "Z-score does not accept uncertainty estimates",
+      "detail": "Z-score is a standardised statistic. When z_score is the sole or primary effect size, no uncertainty estimate (standard error or confidence interval) should be provided.",
+      "appliesTo": ["gene", "cnv"]
+    },
+    {
+      "id": "or-hr-conflict",
+      "summary": "Odds ratio and hazard ratio are mutually exclusive",
+      "detail": "Odds ratio and hazard ratio cannot both be provided in the same file.",
+      "appliesTo": ["gene", "cnv"]
+    },
+    {
+      "id": "primary-effect-required",
+      "summary": "Primary effect size must be designated",
+      "detail": "If more than one effect size column is present, one must be designated as the primary measure of effect. The primary measure of effect is placed in a standardised column in the output file.",
+      "appliesTo": ["gene", "cnv"]
+    }
+  ]
+}
