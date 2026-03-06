@@ -813,9 +813,136 @@ function downloadExample() {
   document.body.removeChild(a);
 }
 
+// ── Column checklist generation from shared JSON ─────────────────
+
+/**
+ * Fetch column-defs.json and build both gene and CNV column checklists.
+ * Must complete before event listeners are attached so that dynamically
+ * created inputs are present in the DOM.
+ */
+async function buildColumnChecklists() {
+  const resp = await fetch("column-defs.json");
+  const defs = await resp.json();
+  buildColumnSection("columns-gene", defs.gene.groups);
+  buildColumnSection("columns-cnv", defs.cnv.groups);
+}
+
+/**
+ * Populate a column checklist section from JSON group definitions.
+ *
+ * Produces the same DOM structure as the original static HTML:
+ *   <fieldset>  → legend + hint + <dl> of inputs + note
+ *   <p.field-error> (hidden)
+ *   <fieldset>  → primary effect selection (hidden, if applicable)
+ *
+ * @param {string} sectionId  - e.g. "columns-gene" or "columns-cnv"
+ * @param {object[]} groups   - array of group definitions from column-defs.json
+ */
+function buildColumnSection(sectionId, groups) {
+  const section = document.getElementById(sectionId);
+
+  for (const group of groups) {
+    const fieldset = document.createElement("fieldset");
+
+    const legend = document.createElement("legend");
+    legend.textContent = group.label;
+    fieldset.appendChild(legend);
+
+    if (group.hint) {
+      const hint = document.createElement("p");
+      hint.textContent = group.hint;
+      fieldset.appendChild(hint);
+    }
+
+    const dl = document.createElement("dl");
+    for (const col of group.columns) {
+      const wrapper = document.createElement("div");
+
+      const dt = document.createElement("dt");
+      const label = document.createElement("label");
+
+      const inputType = col.form?.inputType || group.form?.inputType || "checkbox";
+      const inputName = col.form?.name || group.form?.name;
+      const inputValue = col.form?.value || col.code;
+
+      const input = document.createElement("input");
+      input.type = inputType;
+      input.name = inputName;
+      input.value = inputValue;
+      if (group.requirement === "mandatory") input.required = true;
+
+      label.appendChild(input);
+      label.appendChild(document.createTextNode(" "));
+      const code = document.createElement("code");
+      code.textContent = col.code;
+      label.appendChild(code);
+
+      dt.appendChild(label);
+      wrapper.appendChild(dt);
+
+      const dd = document.createElement("dd");
+      dd.textContent = col.description;
+      wrapper.appendChild(dd);
+
+      dl.appendChild(wrapper);
+    }
+    fieldset.appendChild(dl);
+
+    if (group.note) {
+      const note = document.createElement("p");
+      note.textContent = group.note;
+      fieldset.appendChild(note);
+    }
+
+    section.appendChild(fieldset);
+
+    if (group.errors) {
+      for (const err of group.errors) {
+        const p = document.createElement("p");
+        p.className = "field-error";
+        p.id = err.id;
+        p.hidden = true;
+        p.textContent = err.message;
+        section.appendChild(p);
+      }
+    }
+
+    if (group.hasPrimarySelection && group.primaryForm) {
+      const pf = group.primaryForm;
+      const pFieldset = document.createElement("fieldset");
+      pFieldset.id = pf.fieldsetId;
+      pFieldset.hidden = true;
+
+      const pLegend = document.createElement("legend");
+      pLegend.textContent = "Primary effect size";
+      pFieldset.appendChild(pLegend);
+
+      if (pf.hint) {
+        const pHint = document.createElement("p");
+        pHint.textContent = pf.hint;
+        pFieldset.appendChild(pHint);
+      }
+      if (pf.note) {
+        const pNote = document.createElement("p");
+        pNote.textContent = pf.note;
+        pFieldset.appendChild(pNote);
+      }
+
+      const pContainer = document.createElement("div");
+      pContainer.id = pf.containerId;
+      pFieldset.appendChild(pContainer);
+
+      section.appendChild(pFieldset);
+    }
+  }
+}
+
 // ── Initialisation ───────────────────────────────────────────────
 
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
+  // Build column checklists from shared JSON before attaching listeners
+  await buildColumnChecklists();
+
   // Radio change listeners
   document.querySelectorAll('input[name="variation_type"]').forEach((r) =>
     r.addEventListener("change", handleVariationChange)
