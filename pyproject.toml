@@ -22,6 +22,14 @@ dependencies = [
     "gwascatalog.sumstatlib",
 ]
 
+[project.optional-dependencies]
+pydantic = [
+    "gwascatalog.sumstatlib[pydantic]",
+]
+
+[project.scripts]
+gwascatalog = "gwascatalog.sumstatapp.cli.__main__:main"
+
 [tool.uv.workspace]
 members = [
     "sumstatlib",

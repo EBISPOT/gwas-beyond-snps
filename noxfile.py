@@ -1,3 +1,8 @@
+# /// script
+# dependencies = ["nox"]
+# ///
+import os
+
 import nox
 
 # Use uv for environment creation and package installation
@@ -77,3 +82,35 @@ def lint(session):
 
     # Type checking
     session.run("ty", "check", "src", "sumstatlib/src")
+
+
+@nox.session(default=False)
+def build_docker(session):
+    """Build an image with a Docker V2 manifest (not OCI)"""
+    try:
+        tag = session.posargs[0]
+    except IndexError:
+        raise RuntimeError(
+            "Tag must be provided as a command-line argument"
+            " e.g. nox  -s build_docker -- dev"
+        )
+
+    os.environ["BUILDKIT_OCI_MEDIA_TYPES"] = "0"
+    session.run(
+        "docker",
+        "build",
+        "--platform",
+        "linux/amd64",
+        "--provenance=false",
+        "--push",
+        "-t",
+        f"dockerhub.ebi.ac.uk/gwas/gwas-beyond-snps:{tag}",
+        "-f",
+        "deployment/Dockerfile",
+        ".",
+        external=True,
+    )
+
+
+if __name__ == "__main__":
+    nox.main()

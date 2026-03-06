@@ -1,0 +1,24 @@
+
+replicaCount: 1
+
+image:
+  repository: dockerhub.ebi.ac.uk/gwas/gwas-beyond-snps
+  tag: dev
+  pullPolicy: Always
+
+service:
+  name: gwas-beyond-snps
+  port: 80
+
+ingress:
+  name: beyond-snp-ingress
+  annotations: {}
+  path: "/apps/beyond-snps(/|$)(.*)"
+
+resources:
+  limits:
+    cpu: 250m
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 64Mi
