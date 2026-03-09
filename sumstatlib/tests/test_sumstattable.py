@@ -54,17 +54,17 @@ def cnv_sumstat_file(tmp_path, cnv_n_rows):
 @pytest.fixture
 def important_cnv_fields():
     # a manually curated set of important CNV fields
-    return [
+    return {
         "chromosome",
         "base_pair_start",
         "base_pair_end",
         "beta",
         "standard_error",
         "cnv_id",
-    ]
+    }
 
 
-def test_cnv_sumstat(cnv_sumstat_file, cnv_n_rows, important_cnv_fields):
+def test_cnv_sumstat(cnv_sumstat_file, cnv_n_rows, important_cnv_fields, tmp_path):
     table = SumstatTable(
         data_model=CNVSumstatModel,
         input_path=cnv_sumstat_file,
@@ -75,10 +75,18 @@ def test_cnv_sumstat(cnv_sumstat_file, cnv_n_rows, important_cnv_fields):
         },
     )
 
-    assert table.n_rows == cnv_n_rows
-    for i in table.validate_rows():
-        assert all(x in i for x in important_cnv_fields)
+    outp = tmp_path / "out.csv"
+    writer = table.open_writer(outp)
+    writer.run()
 
+    with outp.open() as f:
+        reader = csv.DictReader(f, delimiter="\t")
+        for row in reader:
+            written_fields = set(row.keys())
+            assert important_cnv_fields.difference(written_fields) == set()
+            break
+
+    assert table.n_rows == cnv_n_rows
     assert not table.has_validation_failed
 
 
@@ -213,18 +221,6 @@ class TestWriterErrors:
 
         assert writer.has_validation_failed
         assert not output.exists()
-
-    def test_commit_with_no_valid_rows_raises(self, tmp_path):
-        bad_file = make_mixed_csv_file(
-            tmp_path / "only_bad.csv", n_valid=0, n_invalid=100_001
-        )
-
-        with pytest.raises(ValueError, match="The first row"):
-            _ = SumstatTable(
-                data_model=CNVSumstatModel,
-                input_path=bad_file,
-                config=CNV_CONFIG,
-            )
 
 
 # ── Sorting tests ─────────────────────────────────────────────────

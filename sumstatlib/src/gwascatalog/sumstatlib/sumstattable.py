@@ -79,9 +79,6 @@ class SumstatTable:
             """
             logger.warning(warning)
 
-        # Validate first row to check column structure — fail fast on bad columns
-        _ = self.output_fieldnames
-
     def _open_sumstat(self) -> IO[str]:
         # don't forget to strip UTF-8 BOM from Excel-exported files
         # newline = "" is best for CSV files - let the dictreader parser handle it
@@ -130,7 +127,13 @@ class SumstatTable:
             [(name, field_map[name]) for name in present if name in field_map],
             key=lambda pair: pair[1],
         )
-        # user-specified fields
+
+        # add any computed fields
+        for field in self.data_model.model_computed_fields:
+            if (idx := field_map.get(field)) is not None:
+                known.insert(idx, (field, idx))
+
+        # finally, append user-specified fields
         extras = [name for name in present if name not in field_map]
 
         return [name for name, _ in known] + extras
