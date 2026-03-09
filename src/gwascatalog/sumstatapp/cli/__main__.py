@@ -4,9 +4,7 @@ Usage::
 
     gwascatalog beyondsnp validate INPUT [INPUT ...] --type {CNV,GENE} [OPTIONS]
 
-Accepts individual files, directories (all regular files inside are
-processed), or quoted glob patterns.  Run with ``--help`` for the full
-list of options.
+Accepts a list of files. Run with ``--help`` for the full list of options.
 """
 
 from __future__ import annotations
@@ -14,9 +12,10 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
-from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
 from typing import TYPE_CHECKING
+
+from gwascatalog.sumstatlib import SumstatConfig
 
 from gwascatalog.sumstatapp.cli._validate import FileResult, validate_file
 
@@ -24,44 +23,25 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 logger = logging.getLogger(__name__)
-
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] [%(module)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 
 # ── Input resolution ──────────────────────────────────────────────
 
 
 def _resolve_inputs(raw: list[str]) -> list[Path]:
-    """Turn user-supplied paths, directories, and glob patterns into files.
-
-    Resolution order for each *raw* entry:
-
-    1. If it names an existing **file**, use it directly.
-    2. If it names an existing **directory**, take every regular
-       (non-hidden) file inside it.
-    3. Otherwise, treat it as a **glob pattern** (supports ``**``).
-    """
+    """Turn user-supplied paths into files."""
     resolved: list[Path] = []
 
     for entry in raw:
         p = Path(entry)
-
         if p.is_file():
             resolved.append(p.resolve())
-        elif p.is_dir():
-            resolved.extend(
-                sorted(
-                    f.resolve()
-                    for f in p.iterdir()
-                    if f.is_file() and not f.name.startswith(".")
-                )
-            )
         else:
-            matches = sorted(m.resolve() for m in Path().glob(entry))
-            files = [m for m in matches if m.is_file()]
-            if not files:
-                logger.warning(
-                    f"{entry} did not match any files",
-                )
-            resolved.extend(files)
+            logger.warning(f"Skipping {entry}: not a file")
 
     # Deduplicate while preserving order
     seen: set[Path] = set()
@@ -82,7 +62,7 @@ def _add_validate_args(parser: argparse.ArgumentParser) -> None:
         "inputs",
         nargs="+",
         metavar="INPUT",
-        help="Files, directories, or glob patterns to validate",
+        help="Files to validate",
     )
     parser.add_argument(
         "--type",
@@ -117,18 +97,6 @@ def _add_validate_args(parser: argparse.ArgumentParser) -> None:
         default=Path("validated"),
         help="Output directory for results (default: ./validated/)",
     )
-    parser.add_argument(
-        "-w",
-        "--workers",
-        type=int,
-        default=1,
-        metavar="N",
-        help=(
-            "Number of parallel worker processes. "
-            "Use 1 (default) for sequential execution, "
-            "which is easier to debug."
-        ),
-    )
     parser.set_defaults(func=_run_validate)
 
 
@@ -155,7 +123,7 @@ def _build_parser() -> argparse.ArgumentParser:
             "Validate GWAS summary statistics files for submission to the GWAS Catalog."
         ),
         epilog=(
-            "Example: gwascatalog beyondsnp validate data/*.tsv "
+            "Example: gwascatalog beyondsnp validate data/file.tsv "
             "--type GENE --assembly GRCh38"
         ),
     )
@@ -217,58 +185,31 @@ def _run_validate(args: argparse.Namespace, parser: argparse.ArgumentParser) -> 
     output_dir: Path = args.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    workers: int = max(1, args.workers)
-
-    print(f"Validating {len(files)} file(s) with {workers} worker(s)")
+    print(f"Validating {len(files)} file(s)")
     print(f"Output: {output_dir}\n")
 
-    common_kwargs: dict[str, object] = {
-        "output_dir": str(output_dir),
-        "variation_type": args.variation_type,
-        "assembly": args.assembly,
-        "primary_effect_size": args.primary_effect_size,
-        "allow_zero_pvalues": args.allow_zero_pvalues,
-    }
+    config = SumstatConfig(
+        allow_zero_p_values=args.allow_zero_pvalues,
+        primary_effect_size=args.primary_effect_size,
+        assembly=args.assembly,
+    )
 
     # ── Dispatch ──────────────────────────────────────────────
     results: list[FileResult] = []
 
-    if workers == 1:
-        # Sequential — simple and easy to debug
-        for f in files:
-            print(f"  {f.name} ...", end=" ", flush=True)
-            result = validate_file(input_path=str(f), **common_kwargs)
-            passed = not result.fatal_error and result.error_count == 0
-            print("PASS" if passed else "FAIL")
-            results.append(result)
-    else:
-        with ProcessPoolExecutor(max_workers=workers) as pool:
-            future_to_path = {
-                pool.submit(validate_file, input_path=str(f), **common_kwargs): f
-                for f in files
-            }
-            for future in as_completed(future_to_path):
-                f = future_to_path[future]
-                try:
-                    result = future.result()
-                except Exception as exc:  # noqa: BLE001
-                    logger.exception("Unexpected error for %s", f.name)
-                    result = FileResult(
-                        input_path=f,
-                        output_path=None,
-                        error_path=None,
-                        rows_processed=0,
-                        valid_count=0,
-                        error_count=0,
-                        elapsed_seconds=0.0,
-                        md5_checksum=None,
-                        fatal_error=str(exc),
-                    )
-                passed = not result.fatal_error and result.error_count == 0
-                print(f"  [{'PASS' if passed else 'FAIL'}] {f.name}")
-                results.append(result)
+    # Sequential — simple and easy to debug
+    for f in files:
+        print(f"  {f.name} ...", end=" ", flush=True)
+        result = validate_file(
+            input_path=str(f),
+            config=config,
+            output_dir=output_dir,
+            variation_type=args.variation_type,
+        )
+        passed = not result.fatal_error and result.error_count == 0
+        print("PASS" if passed else "FAIL")
+        results.append(result)
 
-    # ── Summary ───────────────────────────────────────────────
     _print_summary(results)
 
     has_failures = any(r.error_count > 0 or r.fatal_error is not None for r in results)

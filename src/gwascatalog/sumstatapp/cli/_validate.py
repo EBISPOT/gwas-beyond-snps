@@ -1,8 +1,4 @@
-"""Worker function for validating a single summary statistics file.
-
-Kept in a standalone module so it is importable (and therefore picklable)
-by :class:`~concurrent.futures.ProcessPoolExecutor`.
-"""
+"""Worker function for validating a single summary statistics file."""
 
 from __future__ import annotations
 
@@ -12,12 +8,11 @@ import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING
 
 from gwascatalog.sumstatlib import (
     CNVSumstatModel,
     GeneSumstatModel,
-    GenomeAssembly,
     SumstatConfig,
     SumstatTable,
 )
@@ -84,17 +79,11 @@ def _compute_md5(path: Path) -> str:
 
 def validate_file(
     input_path: str,
-    output_dir: str,
+    output_dir: str | Path,
     variation_type: str,
-    assembly: str | None,
-    primary_effect_size: Literal["beta", "odds_ratio", "hazard_ratio", "z_score"]
-    | None,
-    allow_zero_pvalues: bool,
+    config: SumstatConfig,
 ) -> FileResult:
     """Validate a single summary statistics file and write results.
-
-    All arguments use primitive types so the function can be dispatched to a
-    :class:`~concurrent.futures.ProcessPoolExecutor` without pickling issues.
 
     Returns:
         A :class:`FileResult` summarising the outcome.
@@ -113,11 +102,6 @@ def validate_file(
 
     try:
         model = _get_model(variation_type)
-        config = SumstatConfig(
-            allow_zero_p_values=allow_zero_pvalues,
-            assembly=GenomeAssembly(assembly) if assembly else None,
-            primary_effect_size=primary_effect_size,
-        )
 
         table = SumstatTable(data_model=model, input_path=inp, config=config)
 
