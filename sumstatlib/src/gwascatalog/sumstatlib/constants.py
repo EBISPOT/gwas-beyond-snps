@@ -47,4 +47,4 @@ GENE_FIELD_INDEX_MAP: Final[Mapping[str, int]] = {
 
 # see decision docs for justification
 MIN_GENE_RECORDS: Final[int] = 10_000
-MIN_CNV_RECORDS: Final = None
+MIN_CNV_RECORDS: Final[int] = 10_000

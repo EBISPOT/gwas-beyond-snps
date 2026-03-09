@@ -43,7 +43,7 @@ class CNVSumstatModel(BaseSumstatModel):
       - allow_zero_pvalues (bool, optional):
     """
 
-    MIN_RECORDS: ClassVar[None] = MIN_CNV_RECORDS
+    MIN_RECORDS: ClassVar[int] = MIN_CNV_RECORDS
     FIELD_MAP: ClassVar[Mapping[str, int]] = CNV_FIELD_INDEX_MAP
     VALID_FIELD_NAMES: ClassVar[list[str]] = list(CNV_FIELD_INDEX_MAP.keys())
 

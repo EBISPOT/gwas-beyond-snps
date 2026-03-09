@@ -12,7 +12,7 @@ import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from gwascatalog.sumstatlib import (
     CNVSumstatModel,
@@ -60,29 +60,14 @@ def _get_model(variation_type: str) -> type[CNVSumstatModel] | type[GeneSumstatM
             raise ValueError(f"Unsupported variation type: {variation_type}")
 
 
-def output_stem(path: Path) -> str:
-    """Derive an output file stem, stripping archive and tabular extensions.
-
-    Examples::
-
-        output_stem(Path("study.tsv.gz")) == "study"
-        output_stem(Path("study.tsv"))    == "study"
-        output_stem(Path("study.csv.gz")) == "study"
-    """
-    stem = path.stem
-    if path.suffix == ".gz":
-        stem = Path(stem).stem
-    return stem
-
-
 def _write_error_report(error_path: Path, errors: list[SumstatError]) -> None:
     """Write validation errors to a human-readable TSV file."""
+    dict_errors = [dict(e) for e in errors]
+
     with error_path.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.writer(f, delimiter="\t")
-        writer.writerow(["row", "column", "message"])
-        for e in errors:
-            column = e["loc"] if e["loc"] is not None else ""
-            writer.writerow([e["row"], column, e["msg"]])
+        writer = csv.DictWriter(f, delimiter="\t", fieldnames=["row", "column", "msg"])
+        writer.writeheader()
+        writer.writerows(dict_errors)
 
 
 def _compute_md5(path: Path) -> str:
@@ -102,7 +87,8 @@ def validate_file(
     output_dir: str,
     variation_type: str,
     assembly: str | None,
-    primary_effect_size: str | None,
+    primary_effect_size: Literal["beta", "odds_ratio", "hazard_ratio", "z_score"]
+    | None,
     allow_zero_pvalues: bool,
 ) -> FileResult:
     """Validate a single summary statistics file and write results.
@@ -115,9 +101,13 @@ def validate_file(
     """
     inp = Path(input_path)
     out_dir = Path(output_dir)
-    stem = output_stem(inp)
-    output_path = out_dir / f"{stem}.tsv.gz"
-    error_path = out_dir / f"{stem}.errors.tsv"
+    output_path = out_dir / f"validated_{inp.stem}.tsv.gz"
+    error_path = out_dir / f"{inp.stem}.errors.tsv"
+
+    if output_path.exists():
+        raise FileExistsError(output_path)
+    if error_path.exists():
+        raise FileExistsError(error_path)
 
     start = time.monotonic()
 
@@ -133,8 +123,9 @@ def validate_file(
 
         rows_processed = 0
         valid_count = 0
+        writer = table.open_writer(output_path, compress=True)
 
-        for row in table.open_writer(output_path, compress=True):
+        for row in writer:
             rows_processed += 1
             if row.is_valid:
                 valid_count += 1

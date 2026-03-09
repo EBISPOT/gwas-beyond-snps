@@ -27,7 +27,7 @@ class SumstatConfig(TypedDict):
     """Runtime configuration for validating summary stats"""
 
     allow_zero_p_values: bool
-    assembly: GenomeAssembly
+    assembly: GenomeAssembly | None
     primary_effect_size: Literal["beta", "odds_ratio", "hazard_ratio", "z_score"] | None
 
 
@@ -35,7 +35,7 @@ class SumstatError(TypedDict):
     """A parsed pydantic ValidationError"""
 
     row: int
-    loc: int | None
+    column: str | int | None
     msg: str
 
 
@@ -59,7 +59,6 @@ class SumstatTable:
         data_model: type[CNVSumstatModel | GeneSumstatModel],
         input_path: Path,
         config: SumstatConfig,
-        min_records: int | None = None,
     ):
         self._data_model = data_model
         self._path = Path(input_path)
@@ -69,22 +68,26 @@ class SumstatTable:
         if not self._path.exists():
             raise FileNotFoundError(self._path)
 
-        if min_records is None:
-            self._min_records = self._data_model.MIN_RECORDS
-        else:
-            self._min_records = min_records
-
         n_rows = self.n_rows
-        if self._min_records is not None and n_rows < self._min_records:
-            raise ValueError(f"Not enough rows in file: {n_rows=} {self._min_records=}")
+        if n_rows < self.data_model.MIN_RECORDS:
+            warning = f"""
+            It looks like you only have {n_rows} rows in {self._path}.
+            {self.data_model} recommends at least {self.data_model.MIN_RECORDS} (before
+            any QC steps). Please include all results, not just top hits.
+            The GWAS Catalog inclusion criteria requires studies to be genome-wide.
+            Please get in touch with gwas-subs@ebi.ac.uk if you have any questions.
+            """
+            logger.warning(warning)
 
         # Validate first row to check column structure — fail fast on bad columns
         _ = self.output_fieldnames
 
     def _open_sumstat(self) -> IO[str]:
+        # don't forget to strip UTF-8 BOM from Excel-exported files
+        # newline = "" is best for CSV files - let the dictreader parser handle it
         if _is_gzip(self._path):
-            return gzip.open(self._path, "rt", encoding="utf-8", newline=None)
-        return self._path.open(mode="rt", encoding="utf-8", newline=None)
+            return gzip.open(self._path, "rt", encoding="utf-8-sig", newline="")
+        return self._path.open(mode="rt", encoding="utf-8-sig", newline="")
 
     def parse_csv(self, sample_size: int = 4096) -> Generator[dict]:
         """Automatically detect CSV delimiter and yield each row as a dict"""
@@ -92,12 +95,9 @@ class SumstatTable:
             sample = f.read(sample_size)
             sniffer = csv.Sniffer()
             dialect = sniffer.sniff(sample, delimiters=",\t;| ")
-
-            if not sniffer.has_header(sample):
-                raise ValueError("file doesn't appear to contain a header")
-
-            f.seek(0)  # reset to start of the file
+            f.seek(0)
             reader = csv.DictReader(f, dialect=dialect)
+
             yield from reader
 
     @cached_property
@@ -119,21 +119,10 @@ class SumstatTable:
             ValidationError: If the first row fails validation, indicating
                 an invalid column set (e.g. missing required columns).
         """
-        first_row = next(self.parse_csv())
-        try:
-            instance = self._data_model.model_validate(first_row, context=self._config)
-        except ValidationError as e:
-            logger.critical(f"First row of {self._path.name} failed validation")
-            logger.critical(f"{ValidationError}")
-            msg = (
-                f"The first row of {self._path.name} failed validation. "
-                "This usually means the file has missing or incorrectly "
-                "named columns. Valid column names include: "
-                f"{self.data_model.VALID_FIELD_NAMES}"
-            )
-            raise ValueError(msg) from e
+        present = next(self.parse_csv(), None)
+        if present is None:
+            raise ValueError(f"Can't read anything from {self._path}")
 
-        present = list(instance.model_dump(exclude_none=True).keys())
         field_map = self._data_model.FIELD_MAP
 
         # get a list fields sorted by their field map index
@@ -156,30 +145,6 @@ class SumstatTable:
         with self._open_sumstat() as f:
             next(f, None)  # skip header
             return sum(1 for _ in f)
-
-    def validate_rows(self) -> Generator[dict]:
-        """Validate all rows, storing errors in self._errors and yielding validated
-        rows.
-        """
-        for i, row in enumerate(self.parse_csv()):
-            try:
-                validated = self._data_model.model_validate(
-                    row, context=self._config
-                ).model_dump()
-            except ValidationError as exc:
-                for error in exc.errors():
-                    location = int(error["loc"][0])
-                    self._errors.append(
-                        SumstatError(row=i, loc=location, msg=error["msg"])
-                    )
-
-                if len(self._errors) >= self.MAX_ERRORS:
-                    logger.critical(
-                        f"Stopped validation after {self.MAX_ERRORS} errors"
-                    )
-                    break
-            else:
-                yield validated
 
     @property
     def errors(self) -> list[SumstatError]:
@@ -259,11 +224,11 @@ class SumstatWriter:
             except ValidationError as exc:
                 for error in exc.errors():
                     try:
-                        location = int(error["loc"][0])
+                        location = error["loc"][0]
                     except IndexError:
                         location = None
                     self._table.add_error(
-                        SumstatError(row=i, loc=location, msg=error["msg"])
+                        SumstatError(row=i, column=location, msg=error["msg"])
                     )
                 yield ValidatedRow(row_number=i, is_valid=False)
 

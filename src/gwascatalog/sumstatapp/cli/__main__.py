@@ -219,16 +219,6 @@ def _run_validate(args: argparse.Namespace, parser: argparse.ArgumentParser) -> 
 
     workers: int = max(1, args.workers)
 
-    # Warn about duplicate stems that would clobber output files
-    from gwascatalog.sumstatapp.cli._validate import output_stem
-
-    stems = [output_stem(f) for f in files]
-    if len(stems) != len(set(stems)):
-        print(
-            "WARNING: Duplicate file stems detected — output files may be overwritten",
-            file=sys.stderr,
-        )
-
     print(f"Validating {len(files)} file(s) with {workers} worker(s)")
     print(f"Output: {output_dir}\n")
 
