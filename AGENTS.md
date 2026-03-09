@@ -1,4 +1,4 @@
-# Copilot Instructions — gwas-pysumstats
+# AGENTS.md
 
 ## Project overview
 
@@ -18,11 +18,97 @@ Input data will regularly contain up to tens of millions of rows. Assume streami
 
 Failing fast is good, but the user should be able to review a batch of errors in one go, not just the first one encountered. Consider a design where validation errors are collected and displayed in a scrollable panel for user review.
 
-SNP validation is **out of scope** — users are directed to `gwas-sumstats-tools`. The snp module is a stub/placeholder and should be ignored.
+## Runtime assumptions
+
+- Python 3.12+
+- Pydantic v2
+- Workspace managed with `uv`
+- Linting enforced by `ruff`
+- Type checking enforced by `ty`
+- Test runner: `pytest` via `nox`
+
+`nox` serves as an entrypoint for all CI/CD actions.
+
+## Repository layout
+
+```
+sumstatlib/                  # validation library (canonical pydantic data models)
+src/gwascatalog/sumstatapp/  # validation applications
+  cli/                       # CLI interface (argparse only)
+  web/                       # browser UI (HTML + JS + Pyodide)
+
+docs                         # documentation site (Docusaurus)
+docs/docs/decisions/         # architecture decision records
+```
+
+## Out of scope
+
+SNP validation is NOT implemented in this repository.
+
+Users are directed to `gwas-sumstats-tools`.
+
+The `snp` module is a placeholder and must not be modified or expanded.
+
+## Key rules for agents
+
+- Models must be created using `Model.model_validate(..., context={...})`
+- Domain constraints belong in `Annotated` types
+- Do NOT introduce imperative validators
+- Input files may be 700MB–1GB; be cautious when loading entire datasets into memory
+- Never add new dependencies or frameworks
+- Always import from pydantic via the `_pydantic.py` shim
+
+## Package responsibilities
+
+### sumstatlib
+
+Responsible for:
+
+- Data models
+- Structural validation
+- Domain types
+- Summary statistic file parsing and validation
+
+Must NOT:
+
+- Depend on CLI or web modules
+- Perform UI formatting
+
+### sumstatapp
+
+Responsible for:
+
+- User interfaces
+- Error presentation
+
+### docs
+
+Responsible for:
+
+- Documentation for users that want to submit data (high level, task-focused)
+- Documentation for users that want to reuse data (low level, understanding-focused)
+- Bundling the web application in sumstatapp at build time
+
+## Error handling
+
+Library (`sumstatlib`):
+
+- Raise `ValueError` for validation failures.
+- Pydantic converts these to `ValidationError`.
+
+Applications (`sumstatapp`):
+
+- Catch `ValidationError`
+- Aggregate errors
+- Display them to the user.
+
+Applications must NOT catch unexpected exceptions.
+
+Unexpected errors should crash the application.
 
 ## Architecture decisions
 
-Read `docs/decisions/` for rationale. Key points:
+Read `docs/docs/decisions/` for rationale. Key points:
 
 - **"Parse, don't validate"**: domain constraints are encoded in `Annotated` types (`sumstat_types.py`), not imperative validators. Reuse types from `core/sumstat_types.py` before creating new ones.
 - **Validation context**: models require `Model.model_validate(data, context={...})` — never direct instantiation. Context carries runtime metadata (e.g. `assembly`, `allow_zero_pvalues`, `primary_effect_size`).
@@ -32,7 +118,6 @@ Read `docs/decisions/` for rationale. Key points:
 
 ## Code conventions
 
-- Every module starts with `from __future__ import annotations`
 - Use `typing.Annotated` with `pydantic.Field` for type definitions, not bare types
 - Use `match`/`case` for multi-branch validation logic (Python 3.12+)
 - Enums inherit from `StrEnum`
@@ -40,15 +125,16 @@ Read `docs/decisions/` for rationale. Key points:
 - Types used only for annotations go in `TYPE_CHECKING` blocks — enforced by ruff rule `TC`
 - Prefer absolute imports; strictly avoid circular imports
 
-## Error handling
-
-- Prefer to raise ValueErrors in the library, which Pydantic will catch and convert into `ValidationError` with clear messages
-- In the validation application (`sumstatapp`), catch and collect `ValidationError` and display messages in a scrollable panel for user review
-- Non-validation exceptions should not be caught, allow them to propagate and crash the app
-
 ## Testing patterns
 
-A minimum of 90% coverage is enforced by the CI/CD backend and nox configuration. Integration tests are excluded from coverage calculations. Focus on testing the most critical and complex parts of the codebase, such as the core validation logic in `sumstatlib`. Use mocks and fixtures to isolate units of code and test edge cases effectively.
+- Minimum 90% coverage enforced by CI.
+- Integration tests are excluded from coverage.
+- Focus tests on `sumstatlib` core validation logic.
+
+When adding features:
+
+- Add unit tests for all new validation logic.
+- Use fixtures and mocks to isolate components.
 
 ## Build & run
 
@@ -58,7 +144,7 @@ nox -s tests # run tests
 nox -s lint # lint
 ```
 
-### User persona for validation applications
+## User persona for validation applications
 
 - A senior researcher or clinician who is a specialist in their disease/trait
 - They understand the data well, but have limited CLI skills and no time or motivation to learn - they had a bioinformatician do the analysis for them.
