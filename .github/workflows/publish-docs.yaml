@@ -1,0 +1,73 @@
+name: Publish Documentation Docker Image
+
+# Builds the Docusaurus site and pushes a Docker image to the EBI container
+# registry. Requires two repository secrets:
+#   REGISTRY_USERNAME  — username for dockerhub.ebi.ac.uk
+#   REGISTRY_PASSWORD  — password / access token for dockerhub.ebi.ac.uk
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Documentation version (semver, e.g. 1.2.3)"
+        required: true
+        type: string
+
+env:
+  REGISTRY: dockerhub.ebi.ac.uk
+  IMAGE_NAME: dockerhub.ebi.ac.uk/gwas/gwas-beyond-snps
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yaml
+
+  publish:
+    name: Tag & publish docs image
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # required to push the new tag
+
+    steps:
+      - name: Validate semver input
+        run: |
+          if ! [[ "${{ inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+            echo "Error: version must be valid semver (e.g. 1.2.3 or 1.2.3-rc.1)"
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fail if tag already exists
+        run: |
+          TAG="docs-v${{ inputs.version }}"
+          if git ls-remote --tags origin "$TAG" | grep -q "$TAG"; then
+            echo "Tag $TAG already exists — choose a different version."
+            exit 1
+          fi
+
+      - name: Create and push tag
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "docs-v${{ inputs.version }}"
+          git push origin "docs-v${{ inputs.version }}"
+
+      - name: Install uv (with cache)
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Log in to container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build image
+        run: uv tool run nox -s build_docs_image -- ${{ inputs.version }}
+
+      - name: Push image
+        run: uv tool run nox -s push_docs_image -- ${{ inputs.version }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}

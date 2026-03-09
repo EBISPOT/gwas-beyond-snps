@@ -1,0 +1,77 @@
+name: Publish Python Package to PyPI
+
+# Publishes a single workspace package to PyPI using OIDC trusted publishing.
+# Prerequisites:
+#   1. Create a GitHub environment named "pypi" (optional but recommended for
+#      approval gates and deployment history).
+#   2. Configure a trusted publisher in PyPI for each package, pointing at this
+#      workflow file and the "pypi" environment.
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "Package to publish"
+        required: true
+        type: choice
+        options:
+          - sumstatlib
+          - sumstatapp
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yaml
+
+  publish:
+    name: Tag & publish to PyPI
+    needs: ci
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: write   # required to push the new tag
+      id-token: write   # required for OIDC trusted publishing
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv (with cache)
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Resolve package metadata
+        id: meta
+        run: |
+          if [[ "${{ inputs.package }}" == "sumstatlib" ]]; then
+            VERSION=$(cd sumstatlib && uv version | awk '{print $NF}')
+            PACKAGE_NAME="gwascatalog.sumstatlib"
+          else
+            VERSION=$(uv version | awk '{print $NF}')
+            PACKAGE_NAME="gwascatalog.sumstatapp"
+          fi
+          TAG="${PACKAGE_NAME}-${VERSION}"
+
+          echo "version=$VERSION"       >> "$GITHUB_OUTPUT"
+          echo "package_name=$PACKAGE_NAME" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG"               >> "$GITHUB_OUTPUT"
+
+      - name: Fail if tag already exists
+        run: |
+          if git ls-remote --tags origin "${{ steps.meta.outputs.tag }}" | grep -q "${{ steps.meta.outputs.tag }}"; then
+            echo "Tag ${{ steps.meta.outputs.tag }} already exists — bump the version before publishing."
+            exit 1
+          fi
+
+      - name: Create and push tag
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ steps.meta.outputs.tag }}"
+          git push origin "${{ steps.meta.outputs.tag }}"
+
+      - name: Build wheel
+        run: uv tool run nox -s build_wheel -- ${{ steps.meta.outputs.package_name }}
+
+      - name: Publish to PyPI
+        run: uv tool run nox -s publish_pypi

@@ -1,0 +1,46 @@
+name: Publish Development Documentation Docker Image
+
+# Builds the Docusaurus site and pushes a Docker image to the EBI container
+# registry. Requires two repository secrets:
+#   REGISTRY_USERNAME  — username for dockerhub.ebi.ac.uk
+#   REGISTRY_PASSWORD  — password / access token for dockerhub.ebi.ac.uk
+
+on:
+  workflow_dispatch:
+
+env:
+  REGISTRY: dockerhub.ebi.ac.uk
+  IMAGE_NAME: dockerhub.ebi.ac.uk/gwas/gwas-beyond-snps
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yaml
+
+  publish:
+    name: Tag & publish development docs image
+    needs: ci
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # required to push the new tag
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv (with cache)
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Log in to container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+
+      - name: Build image
+        run: uv tool run nox -s build_docs_image -- dev
+
+      - name: Push image
+        run: uv tool run nox -s push_docs_image -- dev ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
