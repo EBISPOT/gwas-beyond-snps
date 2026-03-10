@@ -684,16 +684,12 @@ function displayResults(result) {
   for (const err of result.errors) {
     const div = document.createElement("div");
     div.className = "validation-error-row";
-    if (err.row > 0) {
-      const span = document.createElement("span");
-      span.className = "row-num";
-      const colPart = err.column != null ? `, column "${err.column}"` : "";
-      span.textContent = `Row ${err.row}${colPart}: `;
-      div.appendChild(span);
-      div.appendChild(document.createTextNode(err.message));
-    } else {
-      div.textContent = err.message;
-    }
+    const span = document.createElement("span");
+    span.className = "row-num";
+    const colPart = err.column != null && err.column !== "" ? `, column "${err.column}"` : "";
+    span.textContent = `Row ${err.row}${colPart}: `;
+    div.appendChild(span);
+    div.appendChild(document.createTextNode(err.message));
     list.appendChild(div);
   }
 
