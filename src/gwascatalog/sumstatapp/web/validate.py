@@ -195,9 +195,10 @@ def validate_file(config_json: str) -> str:
             md5_checksum = md5.hexdigest()
 
         # Transform errors: SumstatError uses 'msg' key, but the JS
-        # front-end expects 'message'.
+        # front-end expects 'message'. Include 'column' when present.
         errors_for_display = [
-            {"row": e["row"], "message": e["msg"]} for e in sumstat_table.errors
+            {"row": e["row"], "column": e["column"], "message": e["msg"]}
+            for e in sumstat_table.errors
         ]
 
         return json.dumps(

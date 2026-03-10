@@ -673,7 +673,8 @@ function displayResults(result) {
     if (err.row > 0) {
       const span = document.createElement("span");
       span.className = "row-num";
-      span.textContent = `Row ${err.row}: `;
+      const colPart = err.column != null ? `, column "${err.column}"` : "";
+      span.textContent = `Row ${err.row}${colPart}: `;
       div.appendChild(span);
       div.appendChild(document.createTextNode(err.message));
     } else {
