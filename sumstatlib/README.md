@@ -1,3 +1,8 @@
+# `gwascatalog.sumstatlib`
+
+This library contains Pydantic models for new types of genetic variation stored in the GWAS Catalog ("beyond SNPs").
+
+It doesn't provide any user facing applications. Its purpose is to contain validation and domain logic for summary statistic validation applications (`gwascatalog.sumstatapp`).
 
 ## Developer notes
 
@@ -77,4 +82,5 @@ If you want to implement a new data model you should:
 3. Compose a new data model from the annotated types, inheriting from the abstract `BaseSumstatModel` class
 4. Add tests for your new types and model
 5. Add your model to `__all__` in the library's root `__init__.py` 
+
 
