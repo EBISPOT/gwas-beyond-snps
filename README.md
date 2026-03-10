@@ -1,11 +1,9 @@
 # GWAS Catalog: Beyond SNPs
 
 [![CI](https://github.com/EBISPOT/gwas-beyond-snps/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/EBISPOT/gwas-beyond-snps/actions/workflows/ci.yaml)
+![PyPI - Version](https://img.shields.io/pypi/v/gwascatalog.sumstatapp)
 
 This Python monorepo contains packages and documentation designed to help users prepare non-SNP GWAS summary statistics for submission to the [GWAS Catalog](https://ebi.ac.uk/gwas).
-
-> [!WARNING]
-> This is a **work in progress**. The current version of the package is under active development and may undergo significant changes. The API and functionality are not yet stable, and breaking changes are expected.
 
 ## What kind of data are supported?
 
@@ -15,6 +13,48 @@ This Python monorepo contains packages and documentation designed to help users 
 | Copy number variant (CNV)            | ✅                                                                            |
 | Gene                                 | ✅                                                                            |
 
+## Using the validation CLI for bulk data processing
+
+
+> [!TIP]
+> If you prefer not to work in a terminal or you [find it difficult to use please try the web app](https://www.ebi.ac.uk/gwas/apps/beyond-snps/validate/)
+
+
+First, [install uv](https://docs.astral.sh/uv/), then run:
+
+```
+$ uvx --from gwascatalog-sumstatapp gwascatalog beyondsnp validate --help
+```
+
+You should see:
+
+```
+Validate GWAS summary statistics files for submission to the GWAS Catalog.
+
+positional arguments:
+  INPUT                 Files to validate
+
+options:
+  -h, --help            show this help message and exit
+  --type {CNV,GENE}     Type of genetic variation (CNV or GENE)
+  --assembly {GRCh38,GRCh37,NCBI36,NCBI35,NCBI34}
+                        Genome assembly (e.g. GRCh38)
+  --effect-size {beta,odds_ratio,hazard_ratio,z_score}
+                        Primary effect size measure
+  --allow-zero-pvalues  Accept zero as a valid p-value
+  -o, --output-dir OUTPUT_DIR
+                        Output directory for results (default: ./validated/)
+```
+
+The package is [also available from PyPI](https://pypi.org/project/gwascatalog.sumstatapp/). You should always install the `pydantic` extra:
+
+```
+$ pipx install "gwascatalog.sumstatapp[pydantic]"
+```
+
+## Documentation
+
+See [our docs here](https://www.ebi.ac.uk/gwas/apps/beyond-snps/). Please create an issue or email gwas-info@ebi.ac.uk if you have any questions or comments. We appreciate community feedback.
 
 ## Developer notes 
 
