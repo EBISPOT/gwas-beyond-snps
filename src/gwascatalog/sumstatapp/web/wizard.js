@@ -71,7 +71,21 @@ function next() {
   if (currentStep < STEPS.length - 1) goToStep(currentStep + 1);
 }
 
+function clearValidationResult() {
+  const heading = document.getElementById("result-heading");
+  const summary = document.getElementById("result-summary");
+  if (heading) { heading.textContent = ""; heading.className = ""; }
+  if (summary) summary.textContent = "";
+  const list = document.getElementById("error-list");
+  if (list) list.innerHTML = "";
+  const checksumPanel = document.getElementById("checksum-panel");
+  if (checksumPanel) checksumPanel.hidden = true;
+  document.getElementById("btn-download").hidden = true;
+  hasValidatedOutput = false;
+}
+
 function prev() {
+  if (STEPS[currentStep] === "validate") clearValidationResult();
   if (currentStep > 0) goToStep(currentStep - 1);
 }
 
