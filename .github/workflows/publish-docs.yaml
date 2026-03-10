@@ -66,8 +66,5 @@ jobs:
           username: ${{ secrets.REGISTRY_USERNAME }}
           password: ${{ secrets.REGISTRY_PASSWORD }}
 
-      - name: Build image
+      - name: Build and push image
         run: uv tool run nox -s build_docs_image -- ${{ inputs.version }}
-
-      - name: Push image
-        run: uv tool run nox -s push_docs_image -- ${{ inputs.version }} ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}

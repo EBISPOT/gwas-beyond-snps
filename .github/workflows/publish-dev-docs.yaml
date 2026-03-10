@@ -41,6 +41,3 @@ jobs:
 
       - name: Build image
         run: uv tool run nox -s build_docs_image -- dev
-
-      - name: Push image
-        run: uv tool run nox -s push_docs_image -- dev ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}

@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import os
-import pathlib
 
 import nox
 
@@ -116,11 +115,9 @@ def build_docs_image(session: nox.Session) -> None:
     if not session.posargs:
         session.error("Specify a version, e.g.: nox -s build_docs_image -- 1.2.3")
 
+    DOCKER_DOCS_IMAGE_NAME = "dockerhub.ebi.ac.uk/gwas/gwas-beyond-snps"
     version = session.posargs[0]
-    local_tag = f"gwas/gwas-sumstats-docs:{version}"
-    dist = pathlib.Path("dist")
-    dist.mkdir(exist_ok=True)
-    tarball = dist / f"docs-image-{version}.tar"
+    docker_tag = f"{DOCKER_DOCS_IMAGE_NAME}:{version}"
 
     # IMPORTANT
     # ancient K8S clusters only support legacy media types,
@@ -135,38 +132,11 @@ def build_docs_image(session: nox.Session) -> None:
         "-f",
         "deployment/Dockerfile",
         "-t",
-        local_tag,
+        docker_tag,
         ".",
+        "--push",
         external=True,
     )
-    session.run("docker", "save", "-o", str(tarball), local_tag, external=True)
-    session.log(f"Saved image to {tarball}")
-
-
-@nox.session(venv_backend="none")
-def push_docs_image(session: nox.Session) -> None:
-    """Load and push the docs image tarball to a container registry.
-
-    Requires docker to already be authenticated (e.g. via docker/login-action).
-
-    Usage:  nox -s push_docs_image -- <version> <registry/image>
-    Example: nox -s push_docs_image -- 1.2.3 dockerhub.ebi.ac.uk/gwas/gwas-sumstats-docs
-    """
-    N_ARGS = 2
-    if len(session.posargs) < N_ARGS:
-        session.error(
-            "Usage: nox -s push_docs_image -- <version> <registry/image>\n"
-            "Example: nox -s push_docs_image -- 1.2.3 "
-            "dockerhub.ebi.ac.uk/gwas/gwas-sumstats-docs"
-        )
-    version, registry_image = session.posargs[0], session.posargs[1]
-    local_tag = f"gwas/gwas-sumstats-docs:{version}"
-    tarball = str(pathlib.Path("dist") / f"docs-image-{version}.tar")
-    session.run("docker", "load", "-i", tarball, external=True)
-    session.run(
-        "docker", "tag", local_tag, f"{registry_image}:{version}", external=True
-    )
-    session.run("docker", "push", f"{registry_image}:{version}", external=True)
 
 
 if __name__ == "__main__":
