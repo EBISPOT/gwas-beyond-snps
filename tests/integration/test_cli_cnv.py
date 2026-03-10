@@ -29,6 +29,7 @@ def valid_cnv_output_columns():
         "chromosome",
         "base_pair_start",
         "base_pair_end",
+        "cnv_id",
         "neg_log10_p_value",
         "beta",
         "standard_error",

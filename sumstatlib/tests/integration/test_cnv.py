@@ -29,7 +29,6 @@ def test_unsorted_input(tmp_path, cnv_file_with_rownums):
         config=config,
         input_path=cnv_file_with_rownums,
         data_model=CNVSumstatModel,
-        min_records=5,
     )
 
     out_path = tmp_path / "sumstat.tsv"

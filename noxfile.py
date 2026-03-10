@@ -62,10 +62,7 @@ def integration_tests(session):
     session.install("pytest")
 
     # Run only integration tests (adjust marker/glob as appropriate)
-    session.run(
-        "pytest",
-        "sumstatlib/tests/integration",
-    )
+    session.run("pytest", "sumstatlib/tests/integration", "tests/integration")
 
 
 @nox.session
