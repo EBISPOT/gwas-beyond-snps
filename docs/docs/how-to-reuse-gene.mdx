@@ -1,0 +1,30 @@
+---
+title: "Gene-based GWAS"
+---
+
+import ColumnRequirements from '@site/src/components/ColumnRequirements';
+
+:::info Ingesting GWAS Catalog data
+
+* Gene-based summary statistics in the GWAS Catalog have been structurally validated since about 2026-03-01
+* This means you can expect files to have a similar set of columns, but some columns may be missing if they are optional
+* You can read multiple files simultaneously with a [vertical stacking by column name approach](https://duckdb.org/2025/01/10/union-by-name)
+* We expect gene-based summary statistics to evolve over time
+
+:::
+
+Internally, structural data validation is done with Pydantic data models available in [`gwascatalog.sumstatlib`](https://github.com/EBISPOT/gwas-beyond-snps/tree/main/sumstatlib).
+
+You could use these models in your own Python code to parse data. For most people it would be easier to read CSV files with `duckdb` or `pandas`.
+
+## Gene-based data fields
+
+:::tip We want the community's feedback!
+
+If you have any feedback about the data format listed below, please contact
+gwas-info@ebi.ac.uk
+
+:::
+
+<ColumnRequirements type="gene" />
+

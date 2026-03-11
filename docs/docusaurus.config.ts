@@ -10,8 +10,8 @@ import type * as Preset from '@docusaurus/preset-classic';
 const isDev = process.env.DEPLOY_ENV === 'development' || process.env.NODE_ENV !== 'production';
 
 const config: Config = {
-  title: 'My Site',
-  tagline: 'Dinosaurs are cool',
+  title: 'GWAS Catalog: Beyond SNPs',
+  tagline: 'Supporting new types of genetic variation in the GWAS Catalog',
   favicon: 'img/favicon.ico',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
@@ -20,7 +20,7 @@ const config: Config = {
   },
 
   // Set the production url of your site here
-  url: 'https://your-docusaurus-site.example.com',
+  url: 'https://ebi.ac.uk/',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: isDev ? '/' : '/gwas/apps/beyond-snps',
@@ -58,7 +58,7 @@ const config: Config = {
 
   themeConfig: {
     // Replace with your project's social card
-    image: 'img/docusaurus-social-card.jpg',
+    image: 'img/logo.png',
     colorMode: {
       respectPrefersColorScheme: true,
     },

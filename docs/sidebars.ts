@@ -55,7 +55,8 @@ const sidebars: SidebarsConfig = {
       label: 'I want to reuse data',
       collapsed: true,
       items: [
-        'how-to-reuse',
+        'how-to-reuse-gene',
+        'how-to-reuse-cnv',
         {
           type: 'category',
           label: 'Architecture decision records',

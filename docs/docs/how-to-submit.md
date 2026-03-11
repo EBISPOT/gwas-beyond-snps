@@ -4,6 +4,16 @@ title: "How to submit your data"
 
 # How to submit gene-based and CNV GWAS to the GWAS Catalog
 
+:::tip It's OK to fail
+
+* Our CNV and gene-based data models are draft standards
+* They have not yet been fully integrated into our submission system
+* We request that submitters validate their data locally prior to submission
+* This means that your submission is **expected to fail validation after you submit it**
+* [Get in touch with us](mailto:gwas-subs@ebi.ac.uk) and we will manually process your submission
+* See below for the expected process
+:::
+
 ```mermaid
 flowchart TD
 
@@ -46,9 +56,16 @@ flowchart TD
     M[Upload **validated files** via Globus]
     L --> M
 
-    N[Continue standard submission until **sumstat validation fails**]
+    N{Checksum validation passes?}
     M --> N
+    N -->|No| Q
 
-    O[Contact gwas-subs@ebi.ac.uk to complete your submission]
-    N --> O
+    Q[Review files, recalculate checksum, update template]
+    Q --> N
+
+    O{Sumstat validation fails?}
+    N -->|Yes| O
+
+    P[Contact gwas-subs@ebi.ac.uk to complete your submission]
+    O --> P
 ```

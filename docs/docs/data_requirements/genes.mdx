@@ -6,20 +6,42 @@ import ColumnRequirements from '@site/src/components/ColumnRequirements';
 
 # Gene-based GWAS data requirements
 
-This page describes the columns that should be present in your gene-based GWAS
-summary statistics file for submission to the GWAS Catalog.
+This page describes the columns that should be present in your gene-based GWAS summary statistics file for submission to the GWAS Catalog.
 
-Column names must appear exactly as shown below.
-Any differences or typos in your file will cause validation errors.
+:::tip We want the community's feedback!
 
-Files are expected to contain at least **10,000 rows**. Smaller files may be
-rejected or flagged for review.
-
-<ColumnRequirements type="gene" />
-
-:::tip
-
-If you have any feedback about the data requirements listed above please contact
+If you have any feedback about the data requirements listed below, please contact
 gwas-info@ebi.ac.uk
 
 :::
+
+## Example table
+
+| `chromosome` | `base_pair_start` | `base_pair_end` | `hgnc_symbol` | `neg_log10_p_value` | `beta` | `standard_error` |
+|--------------|-------------------|-----------------|---------------|---------------------|--------|------------------|
+| 8            | 94925972          | 94949378        | TP53INP1      | 9.45                | 0.048  | 0.008            |
+| 13           | 32315086          | 32400268        | BRCA2         | 13.661              | -0.035 | 0.003            |
+
+:::info Minimum data requirements
+
+Only a gene name (`hgnc_symbol` or `ensembl_gene_id`) and a p-value are required fields for gene-based GWAS.
+
+:::
+
+## Field (column) structure
+
+Column names must appear exactly as shown below. Any differences or typos in your column names will cause validation errors.
+
+:::tip Your analysis must report genome-wide results
+
+* GWAS Catalog submissions are expected to be full genome-wide datasets, not just top hits.
+
+* Gene-based GWAS analyses should contain at least **10,000** pre-QC genes.
+
+* It's OK if quality control steps have reduced the number of rows in your final dataset below
+the minimum row count, but please ensure you are submitting the full set of variants that were
+analysed in your study, including data which didn't meet GWAS significance.
+:::
+
+<ColumnRequirements type="gene" />
+

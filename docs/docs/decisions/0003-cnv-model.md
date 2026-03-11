@@ -69,11 +69,12 @@ adding an enumerated and mutually exclusive flag to indicate the type of genetic
 variation being studied (e.g. gene-based, SNP, CNV). Fields like genome assembly
 are defined in the metadata schema.
 
-Files are expected to contain at least 100,000 rows; smaller files may be
-rejected or flagged for review. This heuristic is based on existing guidelines
-for SNP submissions. The GWAS Catalog accepts only genome-wide (not targeted)
-analyses, and substantially smaller files are unlikely to represent valid CNV
-GWAS results.
+Files are expected to contain at least 10,000 rows pre-QC; smaller files may be
+rejected or flagged for review. The first proposed limit was 100,000 but this has
+been revised down in response to submitter feedback (estimated ~20,000 CNVs present in
+human genomes, many rare variants will be excluded from any GWAS tests). Our aim is to
+identify a heuristic to indicate that a genome-wide analysis has taken place and this
+number may evolve over time.
 
 ### Source of truth
 
