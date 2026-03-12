@@ -17,55 +17,58 @@ title: "How to submit your data"
 ```mermaid
 flowchart TD
 
-    A{What kind of genetic variation do I want to submit?}
-    B[SNPs]
-    C[CNVs]
-    D[I aggregated my variants into genes]
+    variation_type{What kind of genetic variation do I want to submit?}
+    snps[SNPs]
+    cnvs[CNVs]
+    gene_agg[I aggregated my variants into genes]
 
-    A --> B
-    A --> C
-    A --> D
+    variation_type --> snps
+    variation_type --> cnvs
+    variation_type --> gene_agg
 
-    Z[Follow standard submission guidelines at ebi.ac.uk/gwas/docs/submission]
-    B --> Z
+    snp_guidelines[Follow standard submission guidelines at ebi.ac.uk/gwas/docs/submission]
+    snps --> snp_guidelines
 
-    X{How should I validate my files?}
+    validation_choice{How should I validate my files?}
 
-    H[Use the web interface at ebi.ac.uk/gwas/apps/beyond-snps]
-    I[Use the CLI at github.com/ebispot/gwas-pysumstats]
+    web_validator[Use the web interface at ebi.ac.uk/gwas/apps/beyond-snps]
+    cli_validator[Use the CLI at github.com/ebispot/gwas-pysumstats]
 
-    C --> X
-    D --> X
+    cnvs --> validation_choice
+    gene_agg --> validation_choice
 
-    X -->|Few files OR not confident with terminal| H
-    X -->|Many files AND comfortable with terminal| I
+    validation_choice -->|Few files OR not confident with terminal| web_validator
+    validation_choice -->|Many files AND comfortable with terminal| cli_validator
 
-    J{Data passes validation and new standardised files have been created?}
+    validation_result{Data passes validation and new standardised files have been created?}
 
-    H --> J
-    I --> J
+    web_validator --> validation_result
+    cli_validator --> validation_result
 
-    K[Review errors, check docs, correct files, re-validate]
+    fix_errors[Review errors, check docs, correct files, re-validate]
 
-    J -->|No| K
-    K --> J
+    validation_result -->|No| fix_errors
+    fix_errors --> validation_result
 
-    L[Begin standard submission: ebi.ac.uk/gwas/deposition]
-    J -->|Yes| L
+    start_submission[Begin standard submission: ebi.ac.uk/gwas/deposition]
+    validation_result -->|Yes| start_submission
 
-    M[Upload **validated files** via Globus]
-    L --> M
+    complete_metadata[Fill and submit metadata template]
+    start_submission --> complete_metadata
 
-    N{Checksum validation passes?}
-    M --> N
-    N -->|No| Q
+    upload_globus[Upload **validated files** via Globus]
+    complete_metadata --> upload_globus
 
-    Q[Review files, recalculate checksum, update template]
-    Q --> N
+    checksum_check{Checksum validation passes?}
+    upload_globus --> checksum_check
+    checksum_check -->|No| checksum_fix
 
-    O{Sumstat validation fails?}
-    N -->|Yes| O
+    checksum_fix[Review files, recalculate checksum, update template]
+    checksum_fix --> checksum_check
 
-    P[Contact gwas-subs@ebi.ac.uk to complete your submission]
-    O --> P
+    sumstat_check{Sumstat validation fails?}
+    checksum_check -->|Yes| sumstat_check
+
+    contact_support[That's expected, contact gwas-subs@ebi.ac.uk]
+    sumstat_check --> contact_support
 ```
